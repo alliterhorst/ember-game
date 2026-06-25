@@ -19,6 +19,7 @@ import Audio from './systems/Audio.js';
 import Music from './systems/Music.js';
 import Hud from './ui/Hud.js';
 import StartScreen from './ui/StartScreen.js';
+import EdgeCues from './ui/EdgeCues.js';
 import { STORY } from './data/story.js';
 
 const app = document.getElementById('app');
@@ -77,6 +78,15 @@ const halo = new THREE.Mesh(
 halo.position.y = 0.04;
 scene.add(halo);
 
+// centelha-bússola: um "puxão" de luz no lado que aponta pro Coração apagado (só quando pronto)
+const aimCue = new THREE.Mesh(
+  new THREE.PlaneGeometry(1.9, 1.9).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ map: haloTex, color: '#ffe6b0', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
+);
+aimCue.position.y = 0.9;
+scene.add(aimCue);
+let aimT = 0;
+
 // --- Mundo + centelha + sistemas ---
 const forest = new Forest(scene);
 const hearts = new Hearts(scene);
@@ -90,6 +100,7 @@ const hud = new Hud(app);
 const audio = new Audio();
 const music = new Music();
 const startScreen = new StartScreen(app);
+const edgeCues = new EdgeCues(app, hearts.count);
 
 hud.setProgress(0, hearts.count);
 
@@ -198,6 +209,26 @@ function loop() {
   else if (started && heartsLit === 0 && light < 4 && runTime > 1.5) hud.hint(STORY.firstHint);
   else hud.hint(null);
   hearts.update(dt, ready);
+
+  // --- wayfinding: centelha-bússola + indicadores de borda ---
+  aimT += dt;
+  const target = ready ? hearts.nearestDormant(spark.position.x, spark.position.z) : null;
+  if (target) {
+    let dx = target.x - spark.position.x;
+    let dz = target.z - spark.position.z;
+    const len = Math.hypot(dx, dz) || 1;
+    dx /= len; dz /= len;
+    const d = input.dir();
+    const dlen = Math.hypot(d.x, d.z);
+    const align = dlen > 0.05 ? Math.max(0, (d.x * dx + d.z * dz) / dlen) : 0; // 1 = indo pro rumo
+    const pulse = 0.78 + Math.sin(aimT * 4) * 0.22;
+    aimCue.material.opacity += (((0.6 + align * 0.4) * pulse) - aimCue.material.opacity) * 0.2;
+    aimCue.position.x = spark.position.x + dx * (spark.absorbRadius + 2.4);
+    aimCue.position.z = spark.position.z + dz * (spark.absorbRadius + 2.4);
+  } else {
+    aimCue.material.opacity += (0 - aimCue.material.opacity) * 0.2;
+  }
+  edgeCues.update(hearts.list, camera, renderer.domElement, ready);
 
   // levar a luz a um Coração -> reacende a região
   const ti = hearts.touched(spark.position.x, spark.position.z, ready);

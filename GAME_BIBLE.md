@@ -95,6 +95,34 @@ Premissa: o mundo de **EMBER** mergulhou na escuridão quando sua luz central se
 criaturas presas na sombra e revela, em fragmentos, **o que apagou o mundo** — até reacender o
 Núcleo. Tom: contemplativo, esperançoso, sem texto pesado (conta-se pela transformação do mundo).
 
+### 7.1 Orientação (wayfinding) — "a luz é o HUD"
+
+Decisão de design (pesquisa auditável: Journey, Gris, Abzu, Sky, Zelda BotW — ver resumo abaixo).
+Os jogos-referência **não orientam por HUD**; orientam por **luz, som e arquitetura do mundo**.
+Minimapa persistente foi **descartado** (quebra a imersão e a estética minimalista, e em mobile
+rouba tela/atenção da mão única). O problema real não é "falta mapa" — é que **o destino não
+furava a névoa** e **não havia feedback de rumo**. Solução, toda na mesma gramática (luz):
+
+- **Farol do Coração:** cada Coração apagado emite um **brilho/feixe de luz** que fura a névoa
+  (poça de luz no chão + coluna), visível de longe. É o "farol distante" do Journey, local e
+  múltiplo. Pulsa mais forte quando o jogador tem luz pra entregar (barra cheia). Ao reacender,
+  o farol-chamado (quente) vira **brilho verde estável** (vira um marco do mundo já vivo).
+- **Centelha-bússola:** com a barra cheia, a centelha **brilha/pulsa mais do lado que aponta**
+  pro Coração apagado mais próximo (princípio do "Sheikah sensor", traduzido pra luz — mobile
+  costuma estar no mudo). Sem seta, sem texto — a própria luz puxa.
+- **Indicadores de borda:** quando há objetivo (barra cheia), pequenas centelhas na **margem da
+  tela** apontam Corações fora de vista. Somem quando o Coração entra em quadro. Vocabulário de
+  luz, não seta de HUD.
+- **Mapa (se um dia):** só estilo **Sky** — tela de pausa à parte mostrando o mundo reaceso vs.
+  apagado (o mapa É o registro da transformação). Nunca overlay de canto.
+
+### 7.2 Fluxo entre biomas — limiar de luz (sem tela de fase)
+
+Ao reacender o **último Coração** de um bioma, a luz **se espalha e abre um limiar** (ponte/raiz/
+passagem antes velada pela névoa). O jogador **atravessa com a própria centelha**, contínuo como
+Journey — sem loading, sem menu, sem warp seco. Macroestrutura de "reinos" ordenados (Sky), costura
+invisível (Journey).
+
 ---
 
 ## 8. Stack técnica (decisões não-negociáveis)
