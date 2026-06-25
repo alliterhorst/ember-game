@@ -14,6 +14,7 @@ import Particles from './systems/Particles.js';
 import Motes from './systems/Motes.js';
 import Hearts from './systems/Hearts.js';
 import Creatures from './systems/Creatures.js';
+import Ambient from './systems/Ambient.js';
 import Audio from './systems/Audio.js';
 import Music from './systems/Music.js';
 import Hud from './ui/Hud.js';
@@ -27,30 +28,58 @@ renderer.setPixelRatio(PIXEL_RATIO);
 renderer.setSize(window.innerWidth, window.innerHeight);
 app.appendChild(renderer.domElement);
 
-// --- Cena + névoa (mundo adormecido) ---
+// --- Cena + névoa (mundo adormecido). Cores das duas pontas da curva de luz. ---
 const FOG_SLEEP = new THREE.Color(PALETTE.fog);
 const FOG_LIT = new THREE.Color(PALETTE.fogLit);
+const BG_SLEEP = new THREE.Color(PALETTE.bg);
+const BG_LIT = new THREE.Color(PALETTE.bgLit); // fundo desacoplado da névoa
+const SKY_SLEEP = new THREE.Color(PALETTE.groundRim);
+const SKY_LIT = new THREE.Color(PALETTE.skyLit);
+const HEMIG_SLEEP = new THREE.Color(PALETTE.bg);
+const HEMIG_LIT = new THREE.Color('#3d6b4d');
+const SUN_SLEEP = new THREE.Color(PALETTE.groundRim);
+const SUN_LIT = new THREE.Color(PALETTE.sunLit);
+const GROUND_SLEEP = new THREE.Color(PALETTE.ground);
+const GROUND_LIT = new THREE.Color(PALETTE.groundLit);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(PALETTE.bg);
-scene.fog = new THREE.FogExp2(PALETTE.fog, 0.022);
+scene.background = BG_SLEEP.clone();
+scene.fog = new THREE.FogExp2(PALETTE.fog, BAL.world.fogDensitySleep);
 
 const camera = new THREE.PerspectiveCamera(BAL.camera.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 
-scene.add(new THREE.HemisphereLight(PALETTE.groundRim, PALETTE.bg, 0.4));
-const moon = new THREE.DirectionalLight(PALETTE.groundRim, 0.35);
+const hemi = new THREE.HemisphereLight(PALETTE.groundRim, PALETTE.bg, BAL.world.hemiSleep);
+scene.add(hemi);
+const moon = new THREE.DirectionalLight(PALETTE.groundRim, BAL.world.sunSleep);
 moon.position.set(-6, 14, -4);
 scene.add(moon);
 
-const ground = new THREE.Mesh(
-  new THREE.CircleGeometry(90, 64).rotateX(-Math.PI / 2),
-  new THREE.MeshStandardMaterial({ color: PALETTE.ground, roughness: 1, metalness: 0 }),
-);
+const groundMat = new THREE.MeshStandardMaterial({ color: PALETTE.ground, roughness: 1, metalness: 0 });
+const ground = new THREE.Mesh(new THREE.CircleGeometry(90, 64).rotateX(-Math.PI / 2), groundMat);
 scene.add(ground);
+
+// halo de luz no chão sob a centelha (some no adormecido, forte no reaceso)
+const haloTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,255,255,0.9)');
+  g.addColorStop(0.4, 'rgba(255,255,255,0.35)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+})();
+const halo = new THREE.Mesh(
+  new THREE.PlaneGeometry(28, 28).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ map: haloTex, color: PALETTE.groundHalo, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
+);
+halo.position.y = 0.04;
+scene.add(halo);
 
 // --- Mundo + centelha + sistemas ---
 const forest = new Forest(scene);
 const hearts = new Hearts(scene);
 const creatures = new Creatures(scene);
+const ambient = new Ambient(scene);
 const input = new PointerInput(app);
 const spark = new Spark(scene);
 const particles = new Particles(scene);
@@ -77,10 +106,19 @@ composer.addPass(bloom);
 bloom.setSize(window.innerWidth * 0.5, window.innerHeight * 0.5);
 
 function applyWorldLight(w) {
-  scene.fog.density = 0.022 - w * (0.022 - 0.013);
+  const W = BAL.world;
+  scene.fog.density = W.fogDensitySleep + w * (W.fogDensityLit - W.fogDensitySleep);
   scene.fog.color.copy(FOG_SLEEP).lerp(FOG_LIT, w);
-  scene.background.copy(scene.fog.color);
-  bloom.strength = 0.7 + w * 0.55;
+  scene.background.copy(BG_SLEEP).lerp(BG_LIT, w); // fundo desacoplado: mais claro que a névoa
+  bloom.strength = W.bloomSleep + w * (W.bloomLit - W.bloomSleep);
+  hemi.intensity = W.hemiSleep + w * (W.hemiLit - W.hemiSleep);
+  hemi.color.copy(SKY_SLEEP).lerp(SKY_LIT, w);
+  hemi.groundColor.copy(HEMIG_SLEEP).lerp(HEMIG_LIT, w);
+  moon.intensity = W.sunSleep + w * (W.sunLit - W.sunSleep);
+  moon.color.copy(SUN_SLEEP).lerp(SUN_LIT, w);
+  groundMat.color.copy(GROUND_SLEEP).lerp(GROUND_LIT, w);
+  halo.material.opacity = 0.15 + w * 0.55;
+  ambient.setWorldLight(w);
 }
 
 function reacenderBurst(x, z) {
@@ -151,6 +189,7 @@ function loop() {
     hearts.reacender(ti);
     forest.reacenderArea(h.x, h.z, 32);
     creatures.spawn(h.x, h.z, 6);
+    ambient.litArea(h.x, h.z, 32, 45);
     reacenderBurst(h.x, h.z);
     audio.reacender();
     light = 0;
@@ -162,6 +201,7 @@ function loop() {
       // clímax: o mundo inteiro desperta de uma vez
       music.setReacendido(true);
       forest.reacenderTudo();
+      ambient.litAll();
       worldTarget = 1;
       for (let s = 0; s < 5; s += 1) {
         const p = forest.treeAt((s + 0.5) / 5);
@@ -182,7 +222,10 @@ function loop() {
 
   forest.update(dt);
   creatures.update(dt);
+  ambient.update(dt);
   particles.update(dt);
+  halo.position.x = spark.position.x;
+  halo.position.z = spark.position.z;
   placeCamera(false);
 
   fpsAccum += dt;

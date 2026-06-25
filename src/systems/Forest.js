@@ -4,17 +4,22 @@
 // transição suave. Tudo em 2 draw calls.
 import * as THREE from 'three';
 import { PALETTE } from '../config/palette.js';
+import { BAL } from '../config/balance.js';
 
 const YUP = new THREE.Vector3(0, 1, 0);
 const LEAF_SLEEP = new THREE.Color(PALETTE.leafSleep);
 const LEAF_LIT = new THREE.Color(PALETTE.leafLit);
 const TRUNK_SLEEP = new THREE.Color(PALETTE.treeSleep);
 const TRUNK_LIT = new THREE.Color(PALETTE.trunkLit);
+const COPA_R = [0.8, 1.0, 1.27]; // variação de raio de copa (quebra a linha das copas)
 
 export default class Forest {
   /** @param {THREE.Scene} scene */
-  constructor(scene, { count = 260, inner = 8, outer = 70 } = {}) {
+  constructor(scene) {
+    const F = BAL.forest;
+    const count = F.count;
     this.count = count;
+    this.buryY = F.buryY;
     const trunkGeo = new THREE.CylinderGeometry(0.16, 0.28, 2.4, 5);
     const copaGeo = new THREE.ConeGeometry(1.5, 3.8, 6);
     // material branco; a cor real vem do instanceColor (multiplicado)
@@ -28,6 +33,7 @@ export default class Forest {
     this.baseS = new Float32Array(count);
     this.sy = new Float32Array(count);
     this.ry = new Float32Array(count);
+    this.copaR = new Float32Array(count);
     this.lit = new Float32Array(count); // 0 -> 1
     this.transit = new Uint8Array(count);
 
@@ -39,12 +45,21 @@ export default class Forest {
 
     for (let i = 0; i < count; i += 1) {
       const a = Math.random() * Math.PI * 2;
-      const r = inner + Math.sqrt(Math.random()) * (outer - inner);
+      // dois anéis: palco interno (espaçado) + muralha externa (adensa com o raio)
+      let r;
+      if (i / count < F.innerFrac) {
+        r = F.inner + Math.sqrt(Math.random()) * (F.mid - F.inner);
+      } else {
+        // ^2 empurra árvores pra fora (muralha mais densa na borda)
+        const t = Math.random() ** 0.65;
+        r = F.mid + t * (F.outer - F.mid);
+      }
       this.x[i] = Math.cos(a) * r;
       this.z[i] = Math.sin(a) * r;
-      this.baseS[i] = 0.7 + Math.random() * 0.9;
-      this.sy[i] = 0.85 + Math.random() * 0.5;
+      this.baseS[i] = 0.6 + Math.random() * 1.1; // faixa mais larga: marcos altos + sub-bosque
+      this.sy[i] = 0.8 + Math.random() * 0.7;
       this.ry[i] = Math.random() * Math.PI * 2;
+      this.copaR[i] = COPA_R[i % 3];
       this._writeMatrix(i);
       this.trunks.setColorAt(i, TRUNK_SLEEP);
       this.copas.setColorAt(i, LEAF_SLEEP);
@@ -60,12 +75,17 @@ export default class Forest {
     const grow = 0.62 + this.lit[i] * 0.45; // árvore apagada é menor; cresce ao reacender
     const s = this.baseS[i] * grow;
     const sy = this.sy[i];
+    const by = this.buryY; // base enterrada: crava no chão (sem isso "flutua")
     this._q.setFromAxisAngle(YUP, this.ry[i]);
+    // tronco
     this._s.set(s, s * sy, s);
-    this._p.set(this.x[i], 1.2 * s * sy, this.z[i]);
+    this._p.set(this.x[i], by + 1.2 * s * sy, this.z[i]);
     this._m.compose(this._p, this._q, this._s);
     this.trunks.setMatrixAt(i, this._m);
-    this._p.set(this.x[i], (2.4 + 1.6) * s * sy, this.z[i]);
+    // copa (raio horizontal variado p/ quebrar a linha das copas)
+    const cr = this.copaR[i];
+    this._s.set(s * cr, s * sy, s * cr);
+    this._p.set(this.x[i], by + (2.4 + 1.6) * s * sy, this.z[i]);
     this._m.compose(this._p, this._q, this._s);
     this.copas.setMatrixAt(i, this._m);
   }
