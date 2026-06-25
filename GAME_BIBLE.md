@@ -123,6 +123,25 @@ passagem antes velada pela névoa). O jogador **atravessa com a própria centelh
 Journey — sem loading, sem menu, sem warp seco. Macroestrutura de "reinos" ordenados (Sky), costura
 invisível (Journey).
 
+### 7.3 Perigo — "as Sombras" (decisões TRAVADAS, do plano multi-agente)
+
+A tensão prevista na bíblia vira sistema, mas **sem virar combate**. Decisões não-negociáveis:
+
+1. **A Sombra DRENA luz (a carga/progresso), nunca mata.** Não há vida, não há game-over. O pior
+   caso de errar é *recuar* — reacender de novo. Como reacender é o pico de prazer, a punição
+   realimenta o loop gostoso em vez de frustrar. (Mantém Gris/Abzu: medo sereno, não adrenalina.)
+2. **A defesa é a LUZ, nunca o ataque.** Crescer e reacender empurra a sombra; a centelha grande a
+   repele/atravessa; a pequena desvia. Verbos da centelha (sopro/dash, raio maior, eco) iluminam
+   melhor — nunca destroem.
+3. **Sempre justo:** sombra/criatura-sombra é mais lenta que o jogador (desviável por construção);
+   telegrafada (lida à primeira vista + drone grave); vencível a partir do estado mínimo (sem
+   evoluções). Evolução = atalho/conforto, nunca requisito.
+4. **Crescer desbloqueia VERBO, não número:** cada Coração reaceso dá um verbo de luz contemplativo.
+5. **Identidade de bioma = mecânica + visual + som + narrativa próprios** (não recolor). A jornada
+   tem FIM: o **Núcleo** (Bosque→Recife→Dunas→Tundra→Cavernas→Núcleo); fragmentos = colar contínuo.
+
+> Plano de execução faseado em `PLAN.md`.
+
 ---
 
 ## 8. Stack técnica (decisões não-negociáveis)

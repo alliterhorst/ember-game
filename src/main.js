@@ -16,6 +16,7 @@ import Hearts from './systems/Hearts.js';
 import Creatures from './systems/Creatures.js';
 import Ambient from './systems/Ambient.js';
 import Flora from './systems/Flora.js';
+import Shadow from './systems/Shadow.js';
 import Audio from './systems/Audio.js';
 import Music from './systems/Music.js';
 import Hud from './ui/Hud.js';
@@ -95,6 +96,7 @@ const hearts = new Hearts(scene);
 const creatures = new Creatures(scene);
 const ambient = new Ambient(scene);
 const flora = new Flora(scene);
+const shadow = new Shadow(scene);
 const input = new PointerInput(app);
 const spark = new Spark(scene);
 const particles = new Particles(scene);
@@ -106,6 +108,23 @@ const startScreen = new StartScreen(app);
 const edgeCues = new EdgeCues(app, hearts.count);
 
 hud.setProgress(0, hearts.count);
+
+// --- botão de mudo visível (mobile não tem tecla M) — hit >=44px, canto seguro ---
+const muteBtn = document.createElement('button');
+muteBtn.setAttribute('aria-label', 'mudo');
+muteBtn.textContent = '♪';
+muteBtn.style.cssText = 'position:fixed;top:14px;right:14px;width:44px;height:44px;border:none;border-radius:50%;background:rgba(255,255,255,0.07);color:#fff;font-size:20px;cursor:pointer;z-index:9;display:flex;align-items:center;justify-content:center;transition:opacity .3s;';
+muteBtn.addEventListener('pointerdown', (e) => e.stopPropagation()); // não move a centelha / não inicia o jogo
+muteBtn.addEventListener('click', () => {
+  audio.toggleMute(); music.toggleMute();
+  const m = audio.muted;
+  muteBtn.textContent = m ? '⊘' : '♪';
+  muteBtn.style.opacity = m ? '0.45' : '1';
+});
+app.appendChild(muteBtn);
+
+// volta da aba oculta: descarta o delta acumulado (evita salto)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) clock.getDelta(); });
 
 // --- estado do jogo ---
 const ZERO_DIR = { x: 0, z: 0 };
@@ -207,6 +226,7 @@ function regenerate() {
   creatures.clear();
   ambient.reset();
   flora.clear();
+  shadow.reset();
   heartsLit = 0; light = 0; worldLight = 0; worldTarget = 0;
   applyWorldLight(0);
   hud.setProgress(0, hearts.count);
@@ -258,6 +278,14 @@ window.__DEBUG__.spawnPortal = () => spawnPortal();
 window.__DEBUG__.cross = () => crossBiome();
 window.__DEBUG__.biome = () => ({ index: biomeIndex, name: BIOMES[biomeIndex].name, portalActive, transitioning });
 window.__DEBUG__.portalPos = () => ({ x: portalX, z: portalZ });
+// frame-time real (p50/p95) — preciso quando a aba está VISÍVEL (rAF não-throttlado)
+window.__DEBUG__.frameStats = () => {
+  if (!_ftn) return { frames: 0 };
+  const a = Array.from(_ft.slice(0, _ftn)).sort((x, y) => x - y);
+  const pct = (p) => a[Math.min(a.length - 1, Math.floor(p * a.length))];
+  return { p50: +pct(0.5).toFixed(2), p95: +pct(0.95).toFixed(2), max: +a[a.length - 1].toFixed(2), fps: +(1000 / pct(0.5)).toFixed(1), frames: _ftn };
+};
+window.__DEBUG__.shadow = () => ({ presence: +shadow.presence.toFixed(2), prox: +shadow.proximity(spark.position.x, spark.position.z).toFixed(1), veils: shadow.n });
 
 // --- Loop ---
 const clock = new THREE.Clock();
@@ -265,6 +293,8 @@ let lastDt = 0.016;
 let fpsAccum = 0;
 let fpsFrames = 0;
 let runTime = 0; // tempo desde "acender" (pro ensino inicial)
+const _ft = new Float32Array(180); // frame-times (ms) p/ frameStats (QA)
+let _fti = 0; let _ftn = 0;
 placeCamera(true);
 
 // acender (tela inicial) -> começa o jogo
@@ -293,6 +323,18 @@ function loop() {
     audio.absorb();
     light = Math.min(light + 1, BAL.game.motesToReacender);
     hud.setLight(light / BAL.game.motesToReacender);
+  }
+
+  // --- as Sombras: drenam a barra dentro dos véus; recuam diante da luz (GAME_BIBLE §7.3) ---
+  if (started) {
+    shadow.setPresence(1 - worldLight * 0.65); // somem no mundo reaceso
+    shadow.update(dt, spark.position.x, spark.position.z);
+    const haloR = BAL.shadow.haloBase + spark.size * BAL.shadow.haloPerSize;
+    const drain = shadow.drainAt(spark.position.x, spark.position.z, haloR);
+    if (drain > 0 && light > 0) { light = Math.max(0, light - drain * dt); hud.setLight(light / BAL.game.motesToReacender); }
+    const prox = shadow.proximity(spark.position.x, spark.position.z);
+    const danger = prox < 9 ? Math.min(1, (9 - prox) / 11) : 0;
+    audio.setDanger(danger * (1 - worldLight * 0.6));
   }
 
   const ready = light >= BAL.game.motesToReacender && heartsLit < hearts.count;
@@ -385,6 +427,7 @@ function loop() {
   halo.position.z = spark.position.z;
   placeCamera(false);
 
+  _ft[_fti] = dt * 1000; _fti = (_fti + 1) % 180; if (_ftn < 180) _ftn += 1;
   fpsAccum += dt;
   fpsFrames += 1;
   if (fpsAccum >= 0.5) { debugState.fps = Math.round(fpsFrames / fpsAccum); fpsAccum = 0; fpsFrames = 0; }

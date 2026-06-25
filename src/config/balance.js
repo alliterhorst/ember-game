@@ -43,6 +43,17 @@ export const BAL = {
     driftMax: 0.6,
     bobAmp: 0.4,
   },
+  // As Sombras (perigo): véus que DRENAM a barra de luz (nunca matam). Decisão: GAME_BIBLE §7.3
+  shadow: {
+    count: 7, // véus no mundo
+    rMin: 9,
+    rMax: 15,
+    innerClear: 24, // raio livre no centro (sem sombra perto do spawn)
+    drainPerSec: 2.2, // luz/seg drenada no fundo do véu (penetração escala isso)
+    haloBase: 2.4, // raio seguro da centelha (atravessa véu fino)
+    haloPerSize: 1.7, // o halo cresce com o tamanho da centelha (grande = imune)
+    recede: 10, // distância em que o véu recua/esmaece diante da centelha
+  },
   // Curva de luz global ADORMECIDO(0) -> REACESO(1)
   world: {
     fogDensitySleep: 0.022,

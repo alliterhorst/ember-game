@@ -31,7 +31,22 @@ export default class Audio {
     this._verb = this.reverb;
     this._absorbStreak = 0;
     this._lastAbsorb = -10;
+    // drone de PERIGO (sub-grave que cresce com a proximidade da sombra) — sempre tocando, gain 0
+    this.danger = ctx.createGain();
+    this.danger.gain.value = 0;
+    this.danger.connect(this.master);
+    const df = ctx.createBiquadFilter();
+    df.type = 'lowpass'; df.frequency.value = 150;
+    df.connect(this.danger);
+    [46, 69].forEach((f) => { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.connect(df); o.start(); });
     this._started = true;
+  }
+
+  /** Nível de perigo 0..1 (proximidade da sombra) -> volume do drone grave. */
+  setDanger(level) {
+    if (!this._started) return;
+    const v = this.muted ? 0 : Math.max(0, Math.min(1, level)) * 0.15;
+    this.danger.gain.setTargetAtTime(v, this.ctx.currentTime, 0.18);
   }
 
   toggleMute() {
