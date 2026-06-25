@@ -48,7 +48,7 @@ export default class Hud {
 
   setLight(frac) { this.$bar.style.width = `${Math.min(100, frac * 100)}%`; }
 
-  flash(text, ms = 2400) {
+  flash(text, ms = 4200) {
     this.$msg.textContent = text;
     this.$msg.classList.add('show');
     clearTimeout(this._t);

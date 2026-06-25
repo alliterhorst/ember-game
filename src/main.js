@@ -266,7 +266,7 @@ function spawnPortal() {
   portal.position.set(portalX, 0, portalZ);
   portal.visible = true;
   portalActive = true;
-  hud.flash('um limiar de luz se abre', 4000);
+  hud.flash('um limiar de luz se abre ✦', 5500);
 }
 
 function regenerate() {
@@ -289,7 +289,7 @@ function regenerate() {
   music.setReacendido(false);
   music.setBiome(theme.track);
   portal.visible = false; portalActive = false;
-  hud.flash(theme.name, 3500);
+  hud.flash(theme.name, 4800);
 }
 
 function crossBiome() {
@@ -492,7 +492,7 @@ function loop() {
   } else {
     aimCue.material.opacity += (0 - aimCue.material.opacity) * 0.2;
   }
-  edgeCues.update(hearts.list, camera, renderer.domElement, ready);
+  edgeCues.update(hearts.list, camera, renderer.domElement, ready, portalActive ? { x: portalX, z: portalZ } : null);
 
   // levar a luz a um Coração -> reacende a região
   const ti = hearts.touched(spark.position.x, spark.position.z, ready);
@@ -525,15 +525,15 @@ function loop() {
         creatures.spawn(p.x, p.z, 4);
       }
       hud.hint(null);
-      hud.flash(biomeStory.climax, 4500);
+      hud.flash(biomeStory.climax, 7000);
       if (BIOMES[biomeIndex].nucleo) {
         setTimeout(showEnding, 7000); // o Núcleo é o fim da jornada
       } else {
-        if (biomeStory.threshold) setTimeout(() => hud.flash(biomeStory.threshold, 5000), 5200);
-        setTimeout(spawnPortal, 11000); // abre o limiar pro próximo bioma
+        if (biomeStory.threshold) setTimeout(() => hud.flash(biomeStory.threshold, 6500), 5200);
+        setTimeout(spawnPortal, 6500); // abre o limiar pro próximo bioma (logo após o clímax assentar)
       }
     } else {
-      hud.flash(biomeStory.hearts[heartsLit - 1]);
+      hud.flash(biomeStory.hearts[heartsLit - 1], 5500);
     }
   }
 
