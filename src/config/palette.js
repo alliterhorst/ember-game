@@ -17,7 +17,9 @@ export const PALETTE = {
   shadow: '#1a1f22',
   // Bosque REACESO (vibrante) — usado na transformação
   groundLit: '#2d5a3d',
+  trunkLit: '#5a4a2a',
   leafLit: '#4dd064',
+  fogLit: '#16302a',
   flower: '#ffaa44',
   bioglow: '#66ff88',
   ether: '#aaffff',

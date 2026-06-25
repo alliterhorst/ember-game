@@ -16,4 +16,12 @@ export const BAL = {
     fov: 55,
     followLerp: 6, // suavização do follow
   },
+  game: {
+    motesCount: 50, // motas de luz simultâneas no Bosque
+    motesInner: 6, // raio livre no centro
+    motesOuter: 72,
+    absorbRadius: 1.6, // alcance de absorção (cresce com a centelha)
+    growPerMote: 0.035, // quanto a centelha cresce por mota absorvida
+    motesToReacender: 16, // motas pra encher a barra de luz
+  },
 };

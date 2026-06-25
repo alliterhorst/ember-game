@@ -29,12 +29,23 @@ export default class Spark {
     this.vx = 0;
     this.vz = 0;
     this._t = 0;
+    this._trail = 0;
+    this.size = 1; // cresce ao absorver
   }
 
   get position() { return this.root.position; }
   get speed() { return Math.hypot(this.vx, this.vz); }
+  get absorbRadius() { return BAL.game.absorbRadius * (0.7 + this.size * 0.5); }
 
-  update(dt, dir) {
+  /** Cresce ao absorver luz (tamanho, brilho e alcance). */
+  grow(amount) {
+    this.size = Math.min(this.size + amount, 3.2);
+    this.root.scale.setScalar(this.size);
+    this.light.intensity = 14 + this.size * 6;
+    this.light.distance = 32 + this.size * 8;
+  }
+
+  update(dt, dir, particles) {
     // velocidade-alvo proporcional ao ponteiro; suaviza (aceleração)
     const tvx = dir.x * BAL.spark.maxSpeed;
     const tvz = dir.z * BAL.spark.maxSpeed;
@@ -48,5 +59,21 @@ export default class Spark {
     this._t += dt;
     this.core.scale.setScalar(1 + Math.sin(this._t * 4) * 0.06);
     this.halo.scale.setScalar(1 + Math.sin(this._t * 3) * 0.12);
+
+    // rastro de partículas quentes (mais quando se move)
+    if (particles) {
+      this._trail += dt * (2.5 + this.speed * 1.3);
+      while (this._trail >= 1) {
+        this._trail -= 1;
+        const p = this.root.position;
+        particles.emit({
+          x: p.x + (Math.random() - 0.5) * 0.4 * this.size,
+          y: p.y + (Math.random() - 0.5) * 0.4 * this.size,
+          z: p.z + (Math.random() - 0.5) * 0.4 * this.size,
+          vx: -this.vx * 0.15, vy: 0.3 + Math.random() * 0.4, vz: -this.vz * 0.15,
+          life: 0.4 + Math.random() * 0.3, color: PALETTE.sparkGlow,
+        });
+      }
+    }
   }
 }

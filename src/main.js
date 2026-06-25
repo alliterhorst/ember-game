@@ -10,6 +10,11 @@ import { BAL } from './config/balance.js';
 import Spark from './entities/Spark.js';
 import PointerInput from './systems/PointerInput.js';
 import Forest from './systems/Forest.js';
+import Particles from './systems/Particles.js';
+import Motes from './systems/Motes.js';
+import Reacender from './systems/Reacender.js';
+import Audio from './systems/Audio.js';
+import Hud from './ui/Hud.js';
 
 const app = document.getElementById('app');
 
@@ -45,9 +50,18 @@ scene.add(ground);
 // --- O Bosque adormecido (low-poly, InstancedMesh) ---
 const forest = new Forest(scene);
 
-// --- Centelha + input ---
+// --- Centelha + input + sistemas do loop ---
 const input = new PointerInput(app);
 const spark = new Spark(scene);
+const particles = new Particles(scene);
+const motes = new Motes(scene);
+const hud = new Hud(app);
+const audio = new Audio();
+
+// estado do jogo
+let light = 0;
+let reacendido = false;
+const _absorbPos = new THREE.Vector3();
 
 // --- Pós-processamento: bloom (o glow neon) ---
 const composer = new EffectComposer(renderer);
@@ -57,6 +71,9 @@ composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth * 0.5, window.innerHeight * 0.5), 0.7, 0.5, 0.8);
 composer.addPass(bloom);
 bloom.setSize(window.innerWidth * 0.5, window.innerHeight * 0.5);
+
+// --- Reacender (a transformação do Bosque) ---
+const reacender = new Reacender(scene, forest, bloom);
 
 // --- Câmera top-down seguindo a centelha ---
 function placeCamera(snap) {
@@ -76,8 +93,10 @@ function placeCamera(snap) {
 }
 
 // --- Estado de debug (qa-tester lê via window.__DEBUG__) ---
-const debugState = { state: 'play', fps: 0, spark: { x: 0, z: 0, speed: 0 } };
+const debugState = { state: 'play', fps: 0, spark: { x: 0, z: 0, speed: 0 }, light: 0, reacendido: false };
 window.__DEBUG__ = debugState;
+// helper de debug (dev): força luz na barra pra testar o reacender
+window.__DEBUG__.addLight = (n) => { light += n; };
 
 // --- Loop ---
 const clock = new THREE.Clock();
@@ -90,7 +109,34 @@ function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   lastDt = dt;
 
-  spark.update(dt, input.dir());
+  spark.update(dt, input.dir(), particles);
+  motes.update(dt);
+
+  // absorver motas -> crescer + encher a barra de luz
+  const hit = motes.collect(spark.position.x, spark.position.z, spark.absorbRadius);
+  for (let h = 0; h < hit.length; h += 1) {
+    const i = hit[h];
+    motes.posOf(i, _absorbPos);
+    particles.burst(_absorbPos.x, _absorbPos.y, _absorbPos.z, 10, PALETTE.ether, 4, 0.5, 1);
+    motes.respawn(i);
+    spark.grow(BAL.game.growPerMote);
+    audio.absorb();
+    if (!reacendido) {
+      light += 1;
+      hud.setLight(light / BAL.game.motesToReacender);
+    }
+  }
+
+  // barra cheia -> REACENDER (o momento-uau)
+  if (!reacendido && light >= BAL.game.motesToReacender) {
+    reacendido = true;
+    reacender.trigger(spark.position.x, spark.position.z, particles);
+    audio.reacender();
+    hud.flash('o bosque desperta');
+  }
+
+  reacender.update(dt);
+  particles.update(dt);
   placeCamera(false);
 
   fpsAccum += dt;
@@ -103,6 +149,8 @@ function loop() {
   debugState.spark.x = spark.position.x;
   debugState.spark.z = spark.position.z;
   debugState.spark.speed = spark.speed;
+  debugState.light = light;
+  debugState.reacendido = reacendido;
 
   composer.render();
 }
