@@ -172,7 +172,7 @@ bloom.setSize(window.innerWidth * 0.5, window.innerHeight * 0.5);
 
 function applyWorldLight(w) {
   const W = BAL.world;
-  scene.fog.density = W.fogDensitySleep + w * (W.fogDensityLit - W.fogDensitySleep);
+  scene.fog.density = W.fogDensitySleep + w * (W.fogDensityLit * biomeFogScale - W.fogDensitySleep);
   scene.fog.color.copy(FOG_SLEEP).lerp(FOG_LIT, w);
   scene.background.copy(BG_SLEEP).lerp(BG_LIT, w); // fundo desacoplado: mais claro que a névoa
   bloom.strength = W.bloomSleep + w * (W.bloomLit - W.bloomSleep);
@@ -229,9 +229,14 @@ const fadeEl = document.createElement('div');
 fadeEl.style.cssText = 'position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8;transition:opacity 1.1s ease;';
 app.appendChild(fadeEl);
 
+let biomeFogScale = 1; // Dunas = baixa visibilidade
+let biomeCurrent = 0; // Recife = correnteza que carrega a centelha
+let currentAngle = 0;
 function applyBiomeTheme(theme) {
   FOG_LIT.set(theme.fogLit); BG_LIT.set(theme.bgLit); SKY_LIT.set(theme.skyLit);
   HEMIG_LIT.set(theme.hemiGround); SUN_LIT.set(theme.sunLit); GROUND_LIT.set(theme.groundLit);
+  biomeFogScale = theme.fogScale || 1;
+  biomeCurrent = theme.current || 0;
   forest.applyTheme(theme); hearts.applyTheme(theme); ambient.applyTheme(theme);
 }
 
@@ -262,6 +267,7 @@ function regenerate() {
   spark.position.set(0, 1, 0); spark.vx = 0; spark.vz = 0;
   placeCamera(true);
   music.setReacendido(false);
+  music.setBiome(theme.track);
   portal.visible = false; portalActive = false;
   hud.flash(theme.name, 3500);
 }
@@ -357,6 +363,12 @@ function loop() {
 
   // antes de "acender", a centelha fica parada (controle travado)
   spark.update(dt, started ? input.dir() : ZERO_DIR, particles);
+  // correnteza do bioma (Recife): carrega a centelha numa direção que gira devagar
+  if (started && biomeCurrent > 0) {
+    currentAngle += dt * 0.18;
+    spark.position.x += Math.cos(currentAngle) * biomeCurrent * dt;
+    spark.position.z += Math.sin(currentAngle) * biomeCurrent * dt;
+  }
   motes.update(dt);
 
   // absorver motas -> crescer + carregar a barra (com teto)

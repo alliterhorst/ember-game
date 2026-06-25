@@ -63,6 +63,7 @@ export default class Ambient {
 
     this._t = 0;
     this._c = new THREE.Color();
+    this.drift = 'float';
   }
 
   _seedPollen(arr, i) {
@@ -91,6 +92,8 @@ export default class Ambient {
       theme.bioglow, theme.bioglow, theme.bioglow, theme.bioglow, theme.bioglow, theme.bioglow,
       theme.ether, theme.ether, theme.ether, theme.flower,
     ];
+    this.drift = theme.drift || 'float';
+    this.pMat.color.set(theme.ether);
   }
 
   /** Limpa toda a vida ambiente (novo bioma). */
@@ -154,10 +157,18 @@ export default class Ambient {
     // pólen: deriva pra cima lenta + recicla
     if (this.pMat.opacity > 0.001) {
       const pp = this.pGeo.attributes.position.array;
+      const side = this.drift === 'side';
+      const up = this.drift === 'rise' ? 13 : 6; // Recife: bolhas sobem rápido
       for (let i = 0; i < this.pMax; i += 1) {
-        pp[i * 3 + 1] += this.pvy[i] * dt * 6;
-        pp[i * 3] += Math.sin(t * 0.3 + i) * dt * 0.15;
-        if (pp[i * 3 + 1] > 9) this._seedPollen(pp, i);
+        if (side) { // Dunas: poeira varre na horizontal (vento)
+          pp[i * 3] += dt * 4.5;
+          pp[i * 3 + 1] += Math.sin(t + i) * dt * 0.25;
+          if (pp[i * 3] > this.A.spread) pp[i * 3] = -this.A.spread;
+        } else {
+          pp[i * 3 + 1] += this.pvy[i] * dt * up;
+          pp[i * 3] += Math.sin(t * 0.3 + i) * dt * 0.15;
+          if (pp[i * 3 + 1] > 9) this._seedPollen(pp, i);
+        }
       }
       this.pGeo.attributes.position.needsUpdate = true;
     }

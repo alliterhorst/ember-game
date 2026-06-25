@@ -1,7 +1,7 @@
 // src/systems/Music.js — trilha ADAPTATIVA com gravações reais (domínio público). Dono: composer.
-// Não é mais síntese (soava monótona): streama orquestra/piano de verdade via Howler.
-// Leito calmo na exploração (Satie — Gymnopédie nº1, PD) que dá lugar à orquestra dourada no
-// clímax (Grieg — "Morning Mood", Czech National Symphony / Musopen, PD). Créditos em CREDITS.md.
+// Streama piano/orquestra de verdade via Howler. Cada bioma tem sua FAIXA de exploração
+// (Bosque/Recife = Satie Gymnopédie; Dunas = Satie Gnossienne), com crossfade na troca de bioma.
+// Clímax (qualquer bioma) = orquestra Grieg "Morning Mood". Tudo PD/CC — créditos em CREDITS.md.
 import { Howl, Howler } from 'howler';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -11,21 +11,38 @@ export default class Music {
     this._started = false;
     this.muted = false;
     this.reacendido = false;
+    this.tracks = {};
+    this._exploreName = 'satie-gymnopedie';
     window.addEventListener('keydown', (e) => { if (e.code === 'KeyM') this.toggleMute(); });
+  }
+
+  _track(name) {
+    if (!this.tracks[name]) {
+      this.tracks[name] = new Howl({ src: [`${BASE}assets/audio/${name}.ogg`], loop: true, volume: 0, html5: true });
+    }
+    return this.tracks[name];
   }
 
   /** Chamar dentro de um gesto do usuário (autoplay policy) — destrava e começa o leito calmo. */
   start() {
     if (this._started) return;
     this._started = true;
-    this.explore = new Howl({
-      src: [`${BASE}assets/audio/satie-gymnopedie.ogg`], loop: true, volume: 0, html5: true,
-    });
-    this.climax = new Howl({
-      src: [`${BASE}assets/audio/grieg-morning.ogg`], loop: true, volume: 0, html5: true, preload: false,
-    });
+    this.explore = this._track(this._exploreName);
+    this.climax = new Howl({ src: [`${BASE}assets/audio/grieg-morning.ogg`], loop: true, volume: 0, html5: true, preload: false });
     this.explore.play();
-    this.explore.fade(0, 0.5, 3000); // entra suave
+    this.explore.fade(0, 0.5, 3000);
+  }
+
+  /** Troca a faixa de exploração ao mudar de bioma (lazy-load + crossfade). */
+  setBiome(name) {
+    if (!this._started || !name || name === this._exploreName) return;
+    const old = this.explore;
+    old.fade(old.volume(), 0, 2500);
+    setTimeout(() => old.stop(), 2700);
+    this._exploreName = name;
+    this.explore = this._track(name);
+    if (!this.explore.playing()) this.explore.play();
+    this.explore.fade(this.explore.volume(), this.reacendido ? 0.1 : 0.5, 2500);
   }
 
   /** No clímax (bosque renasce): crossfade do leito calmo pra orquestra dourada. */
@@ -35,8 +52,8 @@ export default class Music {
     if (on) {
       if (this.climax.state() === 'unloaded') this.climax.load();
       this.climax.play();
-      this.climax.fade(0, 0.62, 5000); // o amanhecer entra
-      this.explore.fade(this.explore.volume(), 0.1, 4000); // recua pra leito
+      this.climax.fade(0, 0.62, 5000);
+      this.explore.fade(this.explore.volume(), 0.1, 4000);
     } else {
       this.climax.fade(this.climax.volume(), 0, 2500);
       this.explore.fade(this.explore.volume(), 0.5, 2500);
@@ -48,6 +65,6 @@ export default class Music {
     Howler.mute(this.muted);
   }
 
-  setIntensity() {} // compat (a dinâmica agora vem da própria gravação)
+  setIntensity() {}
   getContext() { return Howler.ctx; }
 }
