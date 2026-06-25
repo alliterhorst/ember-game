@@ -15,6 +15,7 @@ import Motes from './systems/Motes.js';
 import Hearts from './systems/Hearts.js';
 import Creatures from './systems/Creatures.js';
 import Ambient from './systems/Ambient.js';
+import Flora from './systems/Flora.js';
 import Audio from './systems/Audio.js';
 import Music from './systems/Music.js';
 import Hud from './ui/Hud.js';
@@ -92,6 +93,7 @@ const forest = new Forest(scene);
 const hearts = new Hearts(scene);
 const creatures = new Creatures(scene);
 const ambient = new Ambient(scene);
+const flora = new Flora(scene);
 const input = new PointerInput(app);
 const spark = new Spark(scene);
 const particles = new Particles(scene);
@@ -166,6 +168,9 @@ window.__DEBUG__ = debugState;
 window.__DEBUG__.addLight = (n) => { light = Math.min(light + n, BAL.game.motesToReacender); };
 window.__DEBUG__.heartPos = (i) => ({ x: hearts.list[i].x, z: hearts.list[i].z });
 window.__DEBUG__.teleport = (x, z) => { spark.position.x = x; spark.position.z = z; spark.vx = 0; spark.vz = 0; };
+window.__DEBUG__.flora = () => ({ ready: flora.ready, rocks: Object.fromEntries(Object.entries(flora.rocks).map(([k, v]) => [k, v.n])), flora: Object.fromEntries(Object.entries(flora.flora).map(([k, v]) => [k, v.n])) });
+// custo da cena (draw calls + triângulos) — indicador de carga GPU, independe da aba/throttle
+window.__DEBUG__.sceneInfo = () => { renderer.render(scene, camera); return { calls: renderer.info.render.calls, tris: renderer.info.render.triangles }; };
 
 // --- Loop ---
 const clock = new THREE.Clock();
@@ -238,6 +243,7 @@ function loop() {
     forest.reacenderArea(h.x, h.z, 32);
     creatures.spawn(h.x, h.z, 6);
     ambient.litArea(h.x, h.z, 32, 45);
+    flora.bloom(h.x, h.z, 26, 65);
     reacenderBurst(h.x, h.z);
     audio.reacender();
     light = 0;
@@ -250,6 +256,7 @@ function loop() {
       music.setReacendido(true);
       forest.reacenderTudo();
       ambient.litAll();
+      flora.bloomAll();
       worldTarget = 1;
       for (let s = 0; s < 5; s += 1) {
         const p = forest.treeAt((s + 0.5) / 5);
@@ -272,6 +279,7 @@ function loop() {
   forest.update(dt);
   creatures.update(dt);
   ambient.update(dt);
+  flora.update(dt);
   particles.update(dt);
   halo.position.x = spark.position.x;
   halo.position.z = spark.position.z;

@@ -19,6 +19,12 @@ ao domínio público / CC0.
 
 > Cortesia ao Musopen (musopen.org) por financiar e liberar estas gravações ao domínio público.
 
+## Modelos 3D (CC0)
+
+- **Kenney — Nature Kit** (CC0, domínio público) — árvores, pedras, cogumelos, flores e plantas
+  low-poly. https://kenney.nl/assets/nature-kit
+  Arquivos: `public/assets/models/nature/*.glb`
+
 ## Bibliotecas
 
 - [Howler.js](https://howlerjs.com/) — áudio web (MIT).
