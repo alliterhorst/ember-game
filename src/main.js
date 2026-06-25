@@ -9,6 +9,7 @@ import { PALETTE } from './config/palette.js';
 import { BAL } from './config/balance.js';
 import Spark from './entities/Spark.js';
 import PointerInput from './systems/PointerInput.js';
+import Forest from './systems/Forest.js';
 
 const app = document.getElementById('app');
 
@@ -28,8 +29,11 @@ scene.fog = new THREE.FogExp2(PALETTE.fog, 0.022);
 
 const camera = new THREE.PerspectiveCamera(BAL.camera.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 
-// --- Luz ambiente fraca (mundo apagado) ---
-scene.add(new THREE.HemisphereLight(PALETTE.groundRim, PALETTE.bg, 0.25));
+// --- Luz do mundo adormecido (fraca e fria; a centelha é a luz de verdade) ---
+scene.add(new THREE.HemisphereLight(PALETTE.groundRim, PALETTE.bg, 0.4));
+const moon = new THREE.DirectionalLight(PALETTE.groundRim, 0.35); // luar frio: dá silhueta às árvores
+moon.position.set(-6, 14, -4);
+scene.add(moon);
 
 // --- Chão (provisório: Bosque adormecido entra depois) ---
 const ground = new THREE.Mesh(
@@ -38,12 +42,8 @@ const ground = new THREE.Mesh(
 );
 scene.add(ground);
 
-// grid sutil pra dar leitura de movimento (provisório)
-const grid = new THREE.GridHelper(160, 80, PALETTE.groundRim, PALETTE.ground);
-grid.position.y = 0.01;
-grid.material.transparent = true;
-grid.material.opacity = 0.25;
-scene.add(grid);
+// --- O Bosque adormecido (low-poly, InstancedMesh) ---
+const forest = new Forest(scene);
 
 // --- Centelha + input ---
 const input = new PointerInput(app);

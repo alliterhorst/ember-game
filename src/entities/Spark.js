@@ -20,7 +20,7 @@ export default class Spark {
     );
     this.root.add(this.core, this.halo);
 
-    this.light = new THREE.PointLight(PALETTE.sparkGlow, 8, 22, 1.6);
+    this.light = new THREE.PointLight(PALETTE.sparkGlow, 14, 32, 1.5);
     this.root.add(this.light);
 
     this.root.position.set(0, 1, 0);
