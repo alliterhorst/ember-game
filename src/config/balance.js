@@ -46,7 +46,7 @@ export const BAL = {
     driftMax: 0.6,
     bobAmp: 0.4,
   },
-  // As Sombras (perigo): véus que DRENAM a barra de luz (nunca matam). Decisão: GAME_BIBLE §7.3
+  // As Sombras (perigo): véus que DRENAM a barra de luz (nunca matam). Decisão: GAME_GUIDE §7.3
   shadow: {
     count: 7, // véus no mundo
     rMin: 9,

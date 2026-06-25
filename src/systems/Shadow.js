@@ -1,6 +1,6 @@
 // src/systems/Shadow.js — "as Sombras" (perigo). Engenharia (spec: enemy-ai/difficulty + art).
 // Véus de sombra ESTÁTICOS no mundo adormecido. Dentro deles a barra de luz DRENA (nunca mata —
-// GAME_BIBLE §7.3). A luz da centelha abre um halo seguro: grande atravessa véus finos, pequena
+// GAME_GUIDE §7.3). A luz da centelha abre um halo seguro: grande atravessa véus finos, pequena
 // desvia. Os véus RECUAM/esmaecem diante da centelha. Leitura: massa escura, fosca, fria, SEM bloom
 // (o anti-coletável). 2 draw calls (discos no chão + domos), via InstancedMesh.
 import * as THREE from 'three';

@@ -1,8 +1,8 @@
 // src/config/biomes.js — paletas REACESAS por bioma. Dono: art-director.
 // O estado ADORMECIDO é o mesmo em todo bioma (escuro/dessaturado — ver palette.js);
 // só o REACESO muda. Atravessar o limiar regenera o mundo com o próximo tema.
-// Estrutura "reinos" ordenados (Sky), costura contínua (Journey) — ver GAME_BIBLE §7.2.
-// Cada bioma tem identidade PRÓPRIA (não só recolor — GAME_BIBLE §7.3):
+// Estrutura "reinos" ordenados (Sky), costura contínua (Journey) — ver GAME_GUIDE §7.2.
+// Cada bioma tem identidade PRÓPRIA (não só recolor — GAME_GUIDE §7.3):
 //  fogScale  : densidade da névoa REACESA (Dunas = baixa visibilidade)
 //  current   : força da correnteza que CARREGA a centelha (Recife = fluxo, refs Abzu)
 //  drift     : comportamento das partículas ambientes ('float' | 'rise' | 'side')

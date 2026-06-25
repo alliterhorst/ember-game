@@ -2,7 +2,7 @@
 // Fonte única da escrita do EMBER. O código consome estas chaves; nada de texto hardcoded.
 // Tom (ART_IDENTITY): contemplativo, esperançoso, misterioso — Gris/Journey. Versos curtos.
 //
-// ARCO (GAME_BIBLE §7.3): os fragmentos por Coração são um COLAR CONTÍNUO entre biomas —
+// ARCO (GAME_GUIDE §7.3): os fragmentos por Coração são um COLAR CONTÍNUO entre biomas —
 // Bosque planta a pergunta, Recife/Dunas aprofundam, o Núcleo entrega a verdade e fecha a jornada.
 // Chaves estáveis: title, subtitle, intro[], startPrompt, firstHint, biomes[], ending.
 //   biomes[i] = { hearts[3], climax, threshold }  (na ordem de BIOMES em config/biomes.js)

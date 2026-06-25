@@ -443,7 +443,7 @@ function loop() {
     hud.setLight(light / BAL.game.motesToReacender);
   }
 
-  // --- Perigo: véus (drenam) + Espreitas (fogem/drenam/libertam). GAME_BIBLE §7.3 ---
+  // --- Perigo: véus (drenam) + Espreitas (fogem/drenam/libertam). GAME_GUIDE §7.3 ---
   if (started) {
     const shadowPresence = 1 - worldLight * 0.65; // somem no mundo reaceso
     shadow.setPresence(shadowPresence);
