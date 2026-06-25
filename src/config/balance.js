@@ -19,18 +19,18 @@ export const BAL = {
   game: {
     motesCount: 50, // motas de luz simultâneas no Bosque
     motesInner: 6, // raio livre no centro
-    motesOuter: 72,
+    motesOuter: 84,
     absorbRadius: 1.6, // alcance de absorção (cresce com a centelha)
     growPerMote: 0.035, // quanto a centelha cresce por mota absorvida
     motesToReacender: 16, // motas pra encher a barra de luz
-    worldRadius: 74, // limite jogável (a centelha não sai do mundo)
+    worldRadius: 88, // limite jogável: perto da borda visual (chão 120, névoa esconde o fim)
   },
   // Densidade do bosque (art-direction "Mundo Vivo"): dois anéis p/ matar o vazio
   forest: {
-    count: 520, // instâncias (2 draw calls); dobro do antigo p/ ler "floresta"
+    count: 640, // instâncias (2 draw calls); mundo maior pede mais árvores
     inner: 6, // início do anel-palco
-    mid: 26, // fronteira palco/muralha
-    outer: 72, // borda do bosque
+    mid: 28, // fronteira palco/muralha
+    outer: 86, // borda do bosque (acompanha o novo limite jogável)
     innerFrac: 0.35, // fração das árvores no anel interno (mais espaçadas)
     buryY: -0.3, // base enterrada no chão (mata o "flutuar")
   },

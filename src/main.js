@@ -57,7 +57,7 @@ moon.position.set(-6, 14, -4);
 scene.add(moon);
 
 const groundMat = new THREE.MeshStandardMaterial({ color: PALETTE.ground, roughness: 1, metalness: 0 });
-const ground = new THREE.Mesh(new THREE.CircleGeometry(90, 64).rotateX(-Math.PI / 2), groundMat);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(120, 64).rotateX(-Math.PI / 2), groundMat);
 scene.add(ground);
 
 // halo de luz no chão sob a centelha (some no adormecido, forte no reaceso)
