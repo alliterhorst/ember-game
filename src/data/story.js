@@ -1,25 +1,12 @@
 // src/data/story.js — TEXTO COMO DADOS. Dono: narrative-designer.
+// Fonte única da escrita do EMBER. O código consome estas chaves; nada de texto hardcoded.
+// Tom (ART_IDENTITY): contemplativo, esperançoso, misterioso — Gris/Journey. Versos curtos.
 //
-// Fonte única de toda a escrita narrativa de EMBER. O código (main.js, Hud, tela
-// inicial) CONSOME estas strings — nada de texto narrativo hardcoded nas cenas.
-// Se mudar a história, muda AQUI; a engenharia só lê as chaves.
-//
-// Tom (ART_IDENTITY.md): contemplativo, esperançoso, misterioso — refs Gris e Journey.
-// Sem texto pesado: a história se conta pela transformação do mundo (apagado→vivo).
-// A história NÃO contradiz a premissa da GAME_BIBLE §7 (o mundo se apagou; você é a
-// última centelha; reacender revela, em fragmentos, o que apagou o mundo, até o Núcleo).
-//
-// Regra de escrita: versos curtos, não parágrafos. A maioria ≤ ~40 caracteres,
-// legível numa tela de celular sem rolar. Português do Brasil.
-//
-// Chaves estáveis (a engenharia depende delas):
-//   title       -> tela inicial
-//   intro[]     -> versos sob o título (premissa poética)
-//   startPrompt -> chamada universal (mouse + toque) pra começar
-//   firstHint   -> 1 linha que ensina o objetivo nos primeiros segundos
-//   hearts[]    -> 3 falas, uma por Coração reaceso (substitui "um Coração desperta")
-//   climax      -> fala do bosque renascendo (substitui "o bosque renasce")
-//   closing     -> 1 linha após o clímax, insinua a jornada maior (opcional)
+// ARCO (GAME_BIBLE §7.3): os fragmentos por Coração são um COLAR CONTÍNUO entre biomas —
+// Bosque planta a pergunta, Recife/Dunas aprofundam, o Núcleo entrega a verdade e fecha a jornada.
+// Chaves estáveis: title, subtitle, intro[], startPrompt, firstHint, biomes[], ending.
+//   biomes[i] = { hearts[3], climax, threshold }  (na ordem de BIOMES em config/biomes.js)
+//   o último bioma (Núcleo) usa `ending` no lugar do limiar — é o fim da jornada.
 
 export const STORY = {
   title: 'EMBER',
@@ -32,17 +19,47 @@ export const STORY = {
   ],
 
   startPrompt: 'toque para acender',
-
   firstHint: 'reúna a luz... e leve-a a um Coração',
 
-  // Progressão emocional: esperança -> mistério -> limiar do clímax.
-  hearts: [
-    'Um Coração desperta.\nO escuro recua.',   // 1: a esperança nasce — a primeira prova de que dá pra reacender
-    'A luz se lembra do caminho.',              // 2: aprofunda o mistério — o mundo conhecia essa luz antes de adormecer
-    'Falta um. O bosque prende a respiração.',  // 3: tensão/limiar — conduz direto ao clímax
+  biomes: [
+    { // O Bosque — despertar / esperança (planta a pergunta)
+      hearts: [
+        'Um Coração desperta.\nO escuro recua.',
+        'A luz se lembra do caminho.',
+        'Algo arrancou a luz daqui.\nMas ela volta.',
+      ],
+      climax: 'O bosque acorda inteiro.',
+      threshold: 'Há mais escuridão além das árvores.',
+    },
+    { // O Recife — memória / fluidez (aprofunda o mistério)
+      hearts: [
+        'As águas guardavam um brilho antigo.',
+        'Houve um dia em que tudo era luz.',
+        'A escuridão veio do fundo —\ne de muito além.',
+      ],
+      climax: 'O recife respira em cor.',
+      threshold: 'A luz te puxa adiante.',
+    },
+    { // As Dunas — perda / propósito (aponta a origem)
+      hearts: [
+        'Aqui a luz secou primeiro.',
+        'Lembra por que vieste:\nreacender a origem.',
+        'O Núcleo te espera, além da areia.',
+      ],
+      climax: 'As dunas reluzem como ouro vivo.',
+      threshold: 'Um último limiar. A origem.',
+    },
+    { // O Núcleo — origem / reencontro (a verdade, o fim)
+      hearts: [
+        'O Núcleo dormia.\nTua luz o toca.',
+        'Era de ti que toda a luz nascia.',
+        'Acende. Lembra.\nVolta a arder.',
+      ],
+      climax: 'O Núcleo desperta —\ne com ele, todo o mundo.',
+    },
   ],
 
-  climax: 'O bosque acorda inteiro.',
-
-  closing: 'Há mais escuridão além das árvores.',
+  // fim da jornada (após reacender o Núcleo)
+  ending: ['Tu eras a centelha.', 'E a centelha era o mundo.'],
+  endingPrompt: 'toque para recomeçar a jornada',
 };

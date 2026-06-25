@@ -229,6 +229,26 @@ const fadeEl = document.createElement('div');
 fadeEl.style.cssText = 'position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8;transition:opacity 1.1s ease;';
 app.appendChild(fadeEl);
 
+// desfecho da jornada (após reacender o Núcleo)
+const endEl = document.createElement('div');
+endEl.style.cssText = 'position:fixed;inset:0;z-index:11;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;pointer-events:none;transition:opacity 2.4s ease;background:radial-gradient(ellipse at 50% 46%,rgba(30,26,18,0.25),rgba(8,8,10,0.96));font-family:ui-monospace,"Segoe UI",monospace;color:#fff;padding:24px;';
+endEl.innerHTML = `<div style="font-size:clamp(19px,5.2vw,32px);line-height:2.1;letter-spacing:0.18em;text-shadow:0 0 26px ${PALETTE.sparkGlow};white-space:pre-line">${STORY.ending.join('\n')}</div><div style="font-size:13px;letter-spacing:0.28em;color:rgba(255,255,255,0.5);margin-top:42px">${STORY.endingPrompt}</div>`;
+app.appendChild(endEl);
+let endingShown = false;
+function showEnding() {
+  endingShown = true;
+  endEl.style.opacity = '1';
+  setTimeout(() => { endEl.style.pointerEvents = 'auto'; }, 2600);
+}
+endEl.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  if (!endingShown) return;
+  endingShown = false;
+  endEl.style.opacity = '0';
+  endEl.style.pointerEvents = 'none';
+  regenerate(); // recomeça a jornada (Núcleo -> Bosque)
+});
+
 let biomeFogScale = 1; // Dunas = baixa visibilidade
 let biomeCurrent = 0; // Recife = correnteza que carrega a centelha
 let currentAngle = 0;
@@ -452,6 +472,7 @@ function loop() {
     heartsLit += 1;
     hud.setProgress(heartsLit, hearts.count);
     worldTarget = heartsLit / hearts.count;
+    const biomeStory = STORY.biomes[biomeIndex];
     if (heartsLit >= hearts.count) {
       // clímax: o mundo inteiro desperta de uma vez
       music.setReacendido(true);
@@ -465,11 +486,15 @@ function loop() {
         creatures.spawn(p.x, p.z, 4);
       }
       hud.hint(null);
-      hud.flash(STORY.climax, 4500);
-      if (STORY.closing) setTimeout(() => hud.flash(STORY.closing, 5000), 5200);
-      setTimeout(spawnPortal, 11000); // depois do clímax assentar, abre o limiar pro próximo bioma
+      hud.flash(biomeStory.climax, 4500);
+      if (BIOMES[biomeIndex].nucleo) {
+        setTimeout(showEnding, 7000); // o Núcleo é o fim da jornada
+      } else {
+        if (biomeStory.threshold) setTimeout(() => hud.flash(biomeStory.threshold, 5000), 5200);
+        setTimeout(spawnPortal, 11000); // abre o limiar pro próximo bioma
+      }
     } else {
-      hud.flash(STORY.hearts[heartsLit - 1]);
+      hud.flash(biomeStory.hearts[heartsLit - 1]);
     }
   }
 

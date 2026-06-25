@@ -29,4 +29,11 @@ export const BIOMES = [
     bioglow: '#ffd766', ether: '#fff0aa', flower: '#ff8a44',
     fogScale: 1.9, current: 0, drift: 'side', track: 'satie-gnossienne',
   },
+  {
+    name: 'O Núcleo', // o destino: a origem da luz (clímax da jornada — quebra o padrão)
+    leafLit: '#ffffff', trunkLit: '#caa86a', groundLit: '#cfc2a0',
+    fogLit: '#fdf6e3', bgLit: '#f0e6c8', skyLit: '#ffffff', sunLit: '#fff6e0', hemiGround: '#9a8a6a',
+    bioglow: '#fff0c0', ether: '#ffffff', flower: '#ffd9a0',
+    fogScale: 1, current: 0, drift: 'rise', track: 'satie-gymnopedie', nucleo: true,
+  },
 ];
