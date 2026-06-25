@@ -5,6 +5,9 @@ export const BAL = {
     maxSpeed: 11, // unidades/segundo na magnitude máxima do ponteiro
     accel: 9, // suavização da velocidade (quanto maior, mais responsivo)
     radius: 0.6, // tamanho/colisão inicial da centelha
+    dashSpeed: 26, // impulso do sopro/dash (verbo 1)
+    dashCooldown: 1.4, // s entre dashes
+    dashGlow: 0.6, // s de halo ampliado pós-dash (empurra a sombra)
   },
   control: {
     reach: 0.28, // fração da menor dimensão da tela p/ velocidade máxima
@@ -53,6 +56,17 @@ export const BAL = {
     haloBase: 2.4, // raio seguro da centelha (atravessa véu fino)
     haloPerSize: 1.7, // o halo cresce com o tamanho da centelha (grande = imune)
     recede: 10, // distância em que o véu recua/esmaece diante da centelha
+  },
+  // Espreitas: criaturas-sombra que fogem da luz. Pequena você teme; grande você liberta.
+  lurker: {
+    count: 14,
+    speed: 7, // < player (11): desviável por construção
+    wanderSpeed: 1.8,
+    fleeRadius: 17, // começa a fugir da luz
+    contactR: 2.2,
+    absorbSize: 1.7, // tamanho da centelha p/ ABSORVER (libertar) em vez de ser drenada
+    drainOnTouch: 3.5, // luz drenada ao encostar quando pequena
+    freeLight: 2, // luz ganha ao libertar uma espreita
   },
   // Curva de luz global ADORMECIDO(0) -> REACESO(1)
   world: {

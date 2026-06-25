@@ -121,6 +121,39 @@ export default class Audio {
     n.stop(t + 0.13);
   }
 
+  /** Libertar uma espreita: shimmer ascendente curto + sininho (recompensa). */
+  freed() {
+    if (!this._started || this.muted) return;
+    const ctx = this.ctx; const t = ctx.currentTime;
+    for (let i = 0; i < 4; i += 1) {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'triangle';
+      const st = t + i * 0.05;
+      o.frequency.value = 520 * (2 ** (i / 4));
+      g.gain.setValueAtTime(0, st);
+      g.gain.linearRampToValueAtTime(0.06, st + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, st + 0.5);
+      o.connect(g); g.connect(this.master); g.connect(this._verb);
+      o.start(st); o.stop(st + 0.55);
+    }
+  }
+
+  /** Ser drenado pela sombra: "sugada" reversa escura + thud grave (perda). */
+  hurt() {
+    if (!this._started || this.muted) return;
+    const ctx = this.ctx; const t = ctx.currentTime;
+    const n = this._noise(0.35);
+    const nf = ctx.createBiquadFilter(); nf.type = 'lowpass';
+    nf.frequency.setValueAtTime(1800, t); nf.frequency.exponentialRampToValueAtTime(200, t + 0.32);
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0, t); ng.gain.linearRampToValueAtTime(0.12, t + 0.05); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
+    n.connect(nf).connect(ng); ng.connect(this.master); ng.connect(this._verb); n.start(t); n.stop(t + 0.35);
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.3);
+    g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    o.connect(g).connect(this.master); o.start(t); o.stop(t + 0.4);
+  }
+
   /** Reacender: whoosh de antecipação -> impacto sub-bass -> sino + shimmer com cauda longa. */
   reacender() {
     if (!this._started || this.muted) return;

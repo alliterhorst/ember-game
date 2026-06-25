@@ -17,6 +17,7 @@ import Creatures from './systems/Creatures.js';
 import Ambient from './systems/Ambient.js';
 import Flora from './systems/Flora.js';
 import Shadow from './systems/Shadow.js';
+import Lurkers from './systems/Lurkers.js';
 import Audio from './systems/Audio.js';
 import Music from './systems/Music.js';
 import Hud from './ui/Hud.js';
@@ -122,6 +123,7 @@ const creatures = new Creatures(scene);
 const ambient = new Ambient(scene);
 const flora = new Flora(scene);
 const shadow = new Shadow(scene);
+const lurkers = new Lurkers(scene);
 const input = new PointerInput(app);
 const spark = new Spark(scene);
 const particles = new Particles(scene);
@@ -252,6 +254,7 @@ function regenerate() {
   ambient.reset();
   flora.clear();
   shadow.reset();
+  lurkers.spawn();
   heartsLit = 0; light = 0; worldLight = 0; worldTarget = 0;
   applyWorldLight(0);
   hud.setProgress(0, hearts.count);
@@ -311,6 +314,10 @@ window.__DEBUG__.frameStats = () => {
   return { p50: +pct(0.5).toFixed(2), p95: +pct(0.95).toFixed(2), max: +a[a.length - 1].toFixed(2), fps: +(1000 / pct(0.5)).toFixed(1), frames: _ftn };
 };
 window.__DEBUG__.shadow = () => ({ presence: +shadow.presence.toFixed(2), prox: +shadow.proximity(spark.position.x, spark.position.z).toFixed(1), veils: shadow.n });
+window.__DEBUG__.lurkers = () => { const out = []; for (let i = 0; i < lurkers.n; i += 1) if (lurkers.active[i]) out.push([Math.round(lurkers.x[i]), Math.round(lurkers.z[i])]); return { active: out.length, pos: out }; };
+window.__DEBUG__.grow = (n) => { for (let k = 0; k < n; k += 1) spark.grow(BAL.game.growPerMote); return spark.size; };
+window.__DEBUG__.sparkSize = () => spark.size;
+window.__DEBUG__.testDash = () => { spark.vx = 10; spark.vz = 0; spark.dashReady = 0; const ok = spark.dash(1, 0); return { ok, vx: +spark.vx.toFixed(1), glow: +spark.dashGlow.toFixed(2) }; };
 
 // --- Loop ---
 const clock = new THREE.Clock();
@@ -326,6 +333,21 @@ placeCamera(true);
 startScreen.onStart(() => {
   started = true;
   if (music.start) music.start();
+});
+
+// sopro/dash de luz: um TOQUE rápido (sem arrastar) dispara o verbo
+let _pdT = 0; let _pdX = 0; let _pdY = 0; let _pdMoved = false;
+window.addEventListener('pointerdown', (e) => { _pdT = performance.now(); _pdX = e.clientX; _pdY = e.clientY; _pdMoved = false; });
+window.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - _pdX, e.clientY - _pdY) > 10) _pdMoved = true; });
+window.addEventListener('pointerup', () => {
+  if (!started || runTime < 0.6) return;
+  if (performance.now() - _pdT > 220 || _pdMoved) return; // toque rápido e parado = dash
+  let dx = spark.vx; let dz = spark.vz; let m = Math.hypot(dx, dz);
+  if (m < 1) { const d = input.dir(); dx = d.x; dz = d.z; m = Math.hypot(dx, dz); }
+  if (m < 0.05) return;
+  if (spark.dash(dx / m, dz / m)) {
+    particles.burst(spark.position.x, spark.position.y, spark.position.z, 14, PALETTE.sparkGlow, 7, 0.4, 0);
+  }
 });
 
 function loop() {
@@ -350,16 +372,28 @@ function loop() {
     hud.setLight(light / BAL.game.motesToReacender);
   }
 
-  // --- as Sombras: drenam a barra dentro dos véus; recuam diante da luz (GAME_BIBLE §7.3) ---
+  // --- Perigo: véus (drenam) + Espreitas (fogem/drenam/libertam). GAME_BIBLE §7.3 ---
   if (started) {
-    shadow.setPresence(1 - worldLight * 0.65); // somem no mundo reaceso
+    const shadowPresence = 1 - worldLight * 0.65; // somem no mundo reaceso
+    shadow.setPresence(shadowPresence);
     shadow.update(dt, spark.position.x, spark.position.z);
-    const haloR = BAL.shadow.haloBase + spark.size * BAL.shadow.haloPerSize;
-    const drain = shadow.drainAt(spark.position.x, spark.position.z, haloR);
-    if (drain > 0 && light > 0) { light = Math.max(0, light - drain * dt); hud.setLight(light / BAL.game.motesToReacender); }
+    lurkers.setPresence(shadowPresence);
+    const haloR = BAL.shadow.haloBase + spark.size * BAL.shadow.haloPerSize + spark.dashGlow * 6;
+    let drain = shadow.drainAt(spark.position.x, spark.position.z, haloR) * dt;
+    const lr = lurkers.update(dt, spark.position.x, spark.position.z, spark.size);
+    if (lr.drain > 0) { drain += lr.drain; audio.hurt(); }
+    if (drain > 0 && light > 0) { light = Math.max(0, light - drain); hud.setLight(light / BAL.game.motesToReacender); }
+    for (let f = 0; f < lr.freed.length; f += 1) {
+      const fr = lr.freed[f];
+      light = Math.min(light + BAL.lurker.freeLight, BAL.game.motesToReacender);
+      hud.setLight(light / BAL.game.motesToReacender);
+      creatures.spawn(fr.x, fr.z, 2);
+      particles.burst(fr.x, 2, fr.z, 16, BIOMES[biomeIndex].bioglow, 5, 0.7, 1);
+      audio.freed();
+    }
     const prox = shadow.proximity(spark.position.x, spark.position.z);
     const danger = prox < 9 ? Math.min(1, (9 - prox) / 11) : 0;
-    audio.setDanger(danger * (1 - worldLight * 0.6));
+    audio.setDanger(danger * shadowPresence);
   }
 
   const ready = light >= BAL.game.motesToReacender && heartsLit < hearts.count;

@@ -58,11 +58,24 @@ export default class Spark {
     this._trail = 0;
     this.size = 1; // cresce ao absorver
     this._baseIntensity = 14;
+    this._dashGlow = 0;
+    this.dashReady = 0; // cooldown restante
   }
 
   get position() { return this.root.position; }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get absorbRadius() { return BAL.game.absorbRadius * (0.7 + this.size * 0.5); }
+  get dashGlow() { return this._dashGlow; }
+
+  /** Sopro/dash de luz: impulso na direção dada + halo ampliado (empurra a sombra). */
+  dash(dx, dz) {
+    if (this.dashReady > 0) return false;
+    this.vx += dx * BAL.spark.dashSpeed;
+    this.vz += dz * BAL.spark.dashSpeed;
+    this._dashGlow = BAL.spark.dashGlow;
+    this.dashReady = BAL.spark.dashCooldown;
+    return true;
+  }
 
   /** Cresce ao absorver luz (tamanho, brilho e alcance). */
   grow(amount) {
@@ -93,6 +106,10 @@ export default class Spark {
       this.vz *= 0.3;
     }
 
+    // dash: decai o glow e o cooldown; durante o glow a luz/halo incham (empurram a sombra)
+    if (this._dashGlow > 0) this._dashGlow = Math.max(0, this._dashGlow - dt);
+    if (this.dashReady > 0) this.dashReady = Math.max(0, this.dashReady - dt);
+
     // vida: pulso do núcleo, casca girando/cintilando, flicker de luz
     this._t += dt;
     const t = this._t;
@@ -102,7 +119,8 @@ export default class Spark {
     this.shell.material.opacity = 0.22 + (Math.sin(t * 7) * 0.5 + 0.5) * 0.16;
     this.halo.scale.setScalar(1 + Math.sin(t * 3) * 0.12);
     const flicker = 0.88 + Math.sin(t * 13) * 0.06 + Math.sin(t * 7.3) * 0.06;
-    this.light.intensity = this._baseIntensity * flicker;
+    this.light.intensity = this._baseIntensity * flicker * (1 + this._dashGlow * 2.2);
+    this.halo.scale.setScalar((1 + Math.sin(t * 3) * 0.12) * (1 + this._dashGlow * 1.4));
 
     // brasinhas orbitando
     this.embers.rotation.y += dt * 0.5;
