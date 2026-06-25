@@ -90,6 +90,31 @@ aimCue.position.y = 0.9;
 scene.add(aimCue);
 let aimT = 0;
 
+// onda de choque de luz no reacender (anel rasteiro que varre o chão) + flash de bloom
+const SHOCK_SPEED = 42; // casa com a cascata do bosque (Forest WAVE_SPEED)
+const shocks = [];
+for (let i = 0; i < 4; i += 1) {
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.9, 1.0, 56).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide }),
+  );
+  ring.position.y = 0.3;
+  ring.visible = false;
+  scene.add(ring);
+  shocks.push({ ring, t: 0, active: false, maxR: 32 });
+}
+let shockCursor = 0;
+let shockFlash = 0;
+function triggerShock(x, z, color, maxR) {
+  const s = shocks[shockCursor];
+  shockCursor = (shockCursor + 1) % shocks.length;
+  s.active = true; s.t = 0; s.maxR = maxR;
+  s.ring.position.set(x, 0.3, z);
+  s.ring.material.color.set(color);
+  s.ring.visible = true;
+  shockFlash = 1;
+}
+
 // --- Mundo + centelha + sistemas ---
 const forest = new Forest(scene);
 const hearts = new Hearts(scene);
@@ -374,6 +399,7 @@ function loop() {
     ambient.litArea(h.x, h.z, 32, 45);
     flora.bloom(h.x, h.z, 26, 65);
     reacenderBurst(h.x, h.z);
+    triggerShock(h.x, h.z, BIOMES[biomeIndex].bioglow, 34);
     audio.reacender();
     light = 0;
     hud.setLight(0);
@@ -386,6 +412,7 @@ function loop() {
       forest.reacenderTudo();
       ambient.litAll();
       flora.bloomAll();
+      triggerShock(0, 0, BIOMES[biomeIndex].bioglow, BAL.game.worldRadius);
       worldTarget = 1;
       for (let s = 0; s < 5; s += 1) {
         const p = forest.treeAt((s + 0.5) / 5);
@@ -417,6 +444,19 @@ function loop() {
     worldLight += (worldTarget - worldLight) * (1 - Math.exp(-1.5 * dt));
     applyWorldLight(worldLight);
   }
+
+  // onda de choque de luz (anel varrendo o chão) + flash de bloom
+  for (let s = 0; s < shocks.length; s += 1) {
+    const sh = shocks[s];
+    if (!sh.active) continue;
+    sh.t += dt;
+    const r = sh.t * SHOCK_SPEED;
+    sh.ring.scale.set(r, 1, r);
+    sh.ring.material.opacity = Math.max(0, 0.85 * (1 - r / sh.maxR));
+    if (r >= sh.maxR) { sh.active = false; sh.ring.visible = false; }
+  }
+  if (shockFlash > 0) shockFlash = Math.max(0, shockFlash - dt * 3.2);
+  bloom.strength = (BAL.world.bloomSleep + worldLight * (BAL.world.bloomLit - BAL.world.bloomSleep)) + shockFlash * 0.9;
 
   forest.update(dt);
   creatures.update(dt);

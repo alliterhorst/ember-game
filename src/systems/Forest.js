@@ -12,6 +12,7 @@ const LEAF_LIT = new THREE.Color(PALETTE.leafLit);
 const TRUNK_SLEEP = new THREE.Color(PALETTE.treeSleep);
 const TRUNK_LIT = new THREE.Color(PALETTE.trunkLit);
 const COPA_R = [0.8, 1.0, 1.27]; // variação de raio de copa (quebra a linha das copas)
+const WAVE_SPEED = 42; // u/s: a onda de luz varre as árvores (cascata espacial no reacender)
 
 export default class Forest {
   /** @param {THREE.Scene} scene */
@@ -36,6 +37,7 @@ export default class Forest {
     this.copaR = new Float32Array(count);
     this.lit = new Float32Array(count); // 0 -> 1
     this.transit = new Uint8Array(count);
+    this.delay = new Float32Array(count); // espera (s) antes de acender — cascata espacial
 
     this._m = new THREE.Matrix4();
     this._p = new THREE.Vector3();
@@ -109,21 +111,24 @@ export default class Forest {
     this.copas.setMatrixAt(i, this._m);
   }
 
-  /** Marca as árvores dentro do raio pra reacenderem (transição em update). */
+  /** Marca as árvores dentro do raio pra reacenderem — em CASCATA (onda saindo de cx,cz). */
   reacenderArea(cx, cz, radius) {
     const r2 = radius * radius;
     for (let i = 0; i < this.count; i += 1) {
-      if (this.lit[i] >= 1) continue;
+      if (this.lit[i] >= 1 || this.transit[i]) continue;
       const dx = this.x[i] - cx;
       const dz = this.z[i] - cz;
-      if (dx * dx + dz * dz < r2) this.transit[i] = 1;
+      const d2 = dx * dx + dz * dz;
+      if (d2 < r2) { this.transit[i] = 1; this.delay[i] = Math.sqrt(d2) / WAVE_SPEED; }
     }
   }
 
-  /** O clímax: marca TODAS as árvores ainda apagadas pra florescerem (o mundo renasce). */
+  /** O clímax: TODAS as árvores apagadas florescem em cascata, a partir do centro (0,0). */
   reacenderTudo() {
     for (let i = 0; i < this.count; i += 1) {
-      if (this.lit[i] < 1) this.transit[i] = 1;
+      if (this.lit[i] >= 1 || this.transit[i]) continue;
+      this.transit[i] = 1;
+      this.delay[i] = Math.hypot(this.x[i], this.z[i]) / WAVE_SPEED;
     }
   }
 
@@ -137,8 +142,9 @@ export default class Forest {
     let any = false;
     for (let i = 0; i < this.count; i += 1) {
       if (!this.transit[i]) continue;
+      if (this.delay[i] > 0) { this.delay[i] -= dt; any = true; continue; } // espera a onda chegar
       any = true;
-      this.lit[i] = Math.min(this.lit[i] + dt * 0.7, 1);
+      this.lit[i] = Math.min(this.lit[i] + dt * 1.6, 1); // acende rápido quando a onda passa
       this.copas.setColorAt(i, this._c.copy(LEAF_SLEEP).lerp(this.leafLit, this.lit[i]));
       this.trunks.setColorAt(i, this._c.copy(TRUNK_SLEEP).lerp(this.trunkLit, this.lit[i]));
       this._writeMatrix(i);
