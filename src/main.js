@@ -12,9 +12,12 @@ import PointerInput from './systems/PointerInput.js';
 
 const app = document.getElementById('app');
 
-// --- Renderer (mobile-first: devicePixelRatio limitado a 2) ---
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// --- Renderer (mobile-first) ---
+// antialias OFF: inútil com EffectComposer (a cena vai pra render target) e custoso.
+// devicePixelRatio cap 1.5: o bloom processa pixels demais em dPR 2 (4x) -> jank.
+const PIXEL_RATIO = Math.min(window.devicePixelRatio, 1.5);
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false });
+renderer.setPixelRatio(PIXEL_RATIO);
 renderer.setSize(window.innerWidth, window.innerHeight);
 app.appendChild(renderer.domElement);
 
@@ -49,9 +52,11 @@ const spark = new Spark(scene);
 // --- Pós-processamento: bloom (o glow neon) ---
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-// (resolução, strength, radius, threshold) — mundo apagado sutil; a centelha clara brilha
-const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.5, 0.8);
+// (resolução, strength, radius, threshold) — mundo apagado sutil; a centelha clara brilha.
+// resolução de bloom em METADE: o blur não precisa de resolução cheia (grande economia).
+const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth * 0.5, window.innerHeight * 0.5), 0.7, 0.5, 0.8);
 composer.addPass(bloom);
+bloom.setSize(window.innerWidth * 0.5, window.innerHeight * 0.5);
 
 // --- Câmera top-down seguindo a centelha ---
 function placeCamera(snap) {
@@ -71,7 +76,7 @@ function placeCamera(snap) {
 }
 
 // --- Estado de debug (qa-tester lê via window.__DEBUG__) ---
-const debugState = { state: 'play', fps: 0, spark: null };
+const debugState = { state: 'play', fps: 0, spark: { x: 0, z: 0, speed: 0 } };
 window.__DEBUG__ = debugState;
 
 // --- Loop ---
@@ -95,11 +100,9 @@ function loop() {
     fpsAccum = 0;
     fpsFrames = 0;
   }
-  debugState.spark = {
-    x: +spark.position.x.toFixed(2),
-    z: +spark.position.z.toFixed(2),
-    speed: +spark.speed.toFixed(2),
-  };
+  debugState.spark.x = spark.position.x;
+  debugState.spark.z = spark.position.z;
+  debugState.spark.speed = spark.speed;
 
   composer.render();
 }
@@ -111,4 +114,5 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+  bloom.setSize(window.innerWidth * 0.5, window.innerHeight * 0.5); // mantém o bloom em meia-res
 });
