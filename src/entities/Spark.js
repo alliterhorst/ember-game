@@ -1,24 +1,50 @@
 // src/entities/Spark.js — a centelha do jogador. Engenharia.
 // Segue o ponteiro com velocidade SUAVIZADA (aceleração), pra um deslizar gostoso.
-// Núcleo brilhante + halo aditivo + luz pontual (ilumina o entorno). O bloom (main) faz brilhar.
+// Não é mais uma bolinha lisa: é uma BRASA viva — núcleo branco + casca facetada que cintila
+// (gira e pega luz) + brasas menores orbitando + flicker orgânico. O bloom (main) faz brilhar.
 import * as THREE from 'three';
 import { BAL } from '../config/balance.js';
 import { PALETTE } from '../config/palette.js';
+
+const EMBER_N = 5; // brasinhas orbitando
+const YUP = new THREE.Vector3(0, 1, 0);
 
 export default class Spark {
   /** @param {THREE.Scene} scene */
   constructor(scene) {
     this.root = new THREE.Group();
+    const R = BAL.spark.radius;
 
+    // núcleo branco quente (o coração da brasa)
     this.core = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(BAL.spark.radius, 2),
+      new THREE.IcosahedronGeometry(R * 0.82, 2),
       new THREE.MeshBasicMaterial({ color: PALETTE.spark }),
     );
-    this.halo = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(BAL.spark.radius * 2.2, 1),
-      new THREE.MeshBasicMaterial({ color: PALETTE.sparkGlow, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }),
+    // casca facetada (cristal de luz): poucos lados, gira devagar e cintila
+    this.shell = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(R * 1.5, 0),
+      new THREE.MeshBasicMaterial({ color: PALETTE.sparkGlow, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }),
     );
-    this.root.add(this.core, this.halo);
+    // halo macio externo
+    this.halo = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(R * 2.4, 1),
+      new THREE.MeshBasicMaterial({ color: PALETTE.sparkGlow, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false }),
+    );
+    this.root.add(this.core, this.shell, this.halo);
+
+    // brasinhas orbitando (vida + detalhe)
+    this.embers = new THREE.Group();
+    const emberGeo = new THREE.IcosahedronGeometry(R * 0.2, 0);
+    const emberMat = new THREE.MeshBasicMaterial({ color: '#ffe6b0', transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+    this._embers = [];
+    for (let i = 0; i < EMBER_N; i += 1) {
+      const e = new THREE.Mesh(emberGeo, emberMat);
+      const a = (i / EMBER_N) * Math.PI * 2;
+      e.userData = { a, rad: R * 2.0 + Math.random() * R * 0.8, h: (Math.random() - 0.5) * R * 1.6, spd: 0.6 + Math.random() * 0.7, ph: Math.random() * 6 };
+      this.embers.add(e);
+      this._embers.push(e);
+    }
+    this.root.add(this.embers);
 
     this.light = new THREE.PointLight(PALETTE.sparkGlow, 14, 32, 1.5);
     this.root.add(this.light);
@@ -31,6 +57,7 @@ export default class Spark {
     this._t = 0;
     this._trail = 0;
     this.size = 1; // cresce ao absorver
+    this._baseIntensity = 14;
   }
 
   get position() { return this.root.position; }
@@ -41,7 +68,7 @@ export default class Spark {
   grow(amount) {
     this.size = Math.min(this.size + amount, 3.2);
     this.root.scale.setScalar(this.size);
-    this.light.intensity = 14 + this.size * 6;
+    this._baseIntensity = 14 + this.size * 6;
     this.light.distance = 32 + this.size * 8;
   }
 
@@ -66,10 +93,27 @@ export default class Spark {
       this.vz *= 0.3;
     }
 
-    // pulsar leve (vida)
+    // vida: pulso do núcleo, casca girando/cintilando, flicker de luz
     this._t += dt;
-    this.core.scale.setScalar(1 + Math.sin(this._t * 4) * 0.06);
-    this.halo.scale.setScalar(1 + Math.sin(this._t * 3) * 0.12);
+    const t = this._t;
+    this.core.scale.setScalar(1 + Math.sin(t * 4) * 0.06);
+    this.shell.rotation.y += dt * 0.6;
+    this.shell.rotation.x += dt * 0.25;
+    this.shell.material.opacity = 0.22 + (Math.sin(t * 7) * 0.5 + 0.5) * 0.16;
+    this.halo.scale.setScalar(1 + Math.sin(t * 3) * 0.12);
+    const flicker = 0.88 + Math.sin(t * 13) * 0.06 + Math.sin(t * 7.3) * 0.06;
+    this.light.intensity = this._baseIntensity * flicker;
+
+    // brasinhas orbitando
+    this.embers.rotation.y += dt * 0.5;
+    for (let i = 0; i < this._embers.length; i += 1) {
+      const e = this._embers[i];
+      const u = e.userData;
+      u.a += u.spd * dt;
+      e.position.set(Math.cos(u.a) * u.rad, u.h + Math.sin(t * 1.6 + u.ph) * 0.3, Math.sin(u.a) * u.rad);
+      const s = 0.8 + Math.sin(t * 5 + u.ph) * 0.25;
+      e.scale.setScalar(s);
+    }
 
     // rastro de partículas quentes (mais quando se move)
     if (particles) {
