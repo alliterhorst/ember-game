@@ -3,6 +3,7 @@
 // quando a barra está cheia (prontos). Reacender um floresce a região e conta no progresso.
 import * as THREE from 'three';
 import { PALETTE } from '../config/palette.js';
+import { BIOMES } from '../config/biomes.js';
 
 const POSITIONS = [
   { x: -44, z: -30 },
@@ -11,7 +12,6 @@ const POSITIONS = [
 ];
 const TOUCH = 7; // raio pra "tocar" o Coração
 const CALL = '#ffd9a0'; // farol-chamado (quente, da família da centelha)
-const LANDMARK = '#66ff88'; // farol do Coração já reaceso (verde, vivo)
 
 // textura radial suave (poça de luz no chão)
 function discTexture() {
@@ -41,7 +41,32 @@ export default class Hearts {
   constructor(scene) {
     this._discTex = discTexture();
     this._beamTex = beamTexture();
+    this.theme = BIOMES[0];
     this.list = POSITIONS.map((p) => this._make(scene, p));
+  }
+
+  applyTheme(theme) { this.theme = theme; }
+
+  /** Regenera os Corações em novas posições, todos apagados (novo bioma). */
+  reset() {
+    const base = Math.random() * Math.PI * 2;
+    for (let i = 0; i < this.list.length; i += 1) {
+      const h = this.list[i];
+      const a = base + i * (Math.PI * 2 / 3) + (Math.random() - 0.5) * 0.6;
+      const r = 38 + Math.random() * 24;
+      h.x = Math.cos(a) * r; h.z = Math.sin(a) * r;
+      h.group.position.set(h.x, 0, h.z);
+      h.aceso = false;
+      h._t = Math.random() * 6;
+      h.trunk.material.color.set(PALETTE.treeSleep);
+      h.copa.material.color.set(PALETTE.leafSleep);
+      h.copa.material.emissive.set('#000000');
+      h.copa.material.emissiveIntensity = 0;
+      h.core.material.color.set('#5a2a26');
+      h.light.color.set('#7a3a30'); h.light.intensity = 2.2; h.light.distance = 26;
+      h.disc.material.color.set(CALL); h.beam.material.color.set(CALL);
+      h.disc.material.opacity = 0.4; h.beam.material.opacity = 0.3; h.disc.scale.set(1, 1, 1);
+    }
   }
 
   _make(scene, p) {
@@ -121,18 +146,19 @@ export default class Hearts {
 
   reacender(i) {
     const h = this.list[i];
+    const t = this.theme;
     h.aceso = true;
-    h.trunk.material.color.set(PALETTE.trunkLit);
-    h.copa.material.color.set(PALETTE.leafLit);
-    h.copa.material.emissive.set(PALETTE.leafLit);
+    h.trunk.material.color.set(t.trunkLit);
+    h.copa.material.color.set(t.leafLit);
+    h.copa.material.emissive.set(t.leafLit);
     h.copa.material.emissiveIntensity = 0.3;
-    h.core.material.color.set(PALETTE.flower);
-    h.light.color.set(PALETTE.flower);
+    h.core.material.color.set(t.flower);
+    h.light.color.set(t.flower);
     h.light.intensity = 6;
     h.light.distance = 34;
-    // farol-chamado (quente) -> marco verde (vivo)
-    h.disc.material.color.set(LANDMARK);
-    h.beam.material.color.set(LANDMARK);
+    // farol-chamado (quente) -> marco do bioma (vivo)
+    h.disc.material.color.set(t.bioglow);
+    h.beam.material.color.set(t.bioglow);
     h.disc.scale.set(1, 1, 1);
   }
 

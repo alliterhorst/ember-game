@@ -18,6 +18,7 @@ export default class Ambient {
   constructor(scene) {
     const A = BAL.ambient;
     this.A = A;
+    this.firePalette = FIRE_PALETTE.slice(); // muda por bioma
     // --- vaga-lumes (surgem nas zonas reacesas) ---
     this.fMax = A.fireflies;
     this.fActive = new Uint8Array(this.fMax);
@@ -80,9 +81,26 @@ export default class Ambient {
     this.phase[i] = Math.random() * Math.PI * 2;
     this.driftR[i] = 1.2 + Math.random() * 2.8;
     this.driftS[i] = this.A.driftMin + Math.random() * (this.A.driftMax - this.A.driftMin);
-    const hex = FIRE_PALETTE[i % FIRE_PALETTE.length];
+    const hex = this.firePalette[i % this.firePalette.length];
     this._c.set(hex);
     this.br[i] = this._c.r; this.bg[i] = this._c.g; this.bb[i] = this._c.b;
+  }
+
+  applyTheme(theme) {
+    this.firePalette = [
+      theme.bioglow, theme.bioglow, theme.bioglow, theme.bioglow, theme.bioglow, theme.bioglow,
+      theme.ether, theme.ether, theme.ether, theme.flower,
+    ];
+  }
+
+  /** Limpa toda a vida ambiente (novo bioma). */
+  reset() {
+    this.fActive.fill(0);
+    this.cursor = 0;
+    const fp = this.fGeo.attributes.position.array;
+    fp.fill(-9999);
+    this.fGeo.attributes.position.needsUpdate = true;
+    this.pMat.opacity = 0;
   }
 
   /** Acende n vaga-lumes numa zona reacesa (raio ao redor de cx,cz). */

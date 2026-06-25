@@ -22,6 +22,7 @@ import Hud from './ui/Hud.js';
 import StartScreen from './ui/StartScreen.js';
 import EdgeCues from './ui/EdgeCues.js';
 import { STORY } from './data/story.js';
+import { BIOMES } from './config/biomes.js';
 
 const app = document.getElementById('app');
 
@@ -147,6 +148,88 @@ function reacenderBurst(x, z) {
   }
 }
 
+// --- Fluxo entre biomas: limiar de luz -> travessia -> regeneração (novo bioma) ---
+let biomeIndex = 0;
+let portalActive = false;
+let transitioning = false;
+let portalX = 0;
+let portalZ = 0;
+
+// o limiar (portal): anel + poça de luz + coluna — brilhante, fura a névoa (fog:false)
+const portal = new THREE.Group();
+portal.visible = false;
+const portalRing = new THREE.Mesh(
+  new THREE.TorusGeometry(4.6, 0.55, 10, 32).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: '#eaffff', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
+);
+portalRing.position.y = 0.6;
+const portalDisc = new THREE.Mesh(
+  new THREE.PlaneGeometry(26, 26).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ map: haloTex, color: '#d6ffff', transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
+);
+portalDisc.position.y = 0.12;
+const portalCol = new THREE.Mesh(
+  new THREE.CylinderGeometry(3.6, 2.0, 56, 16, 1, true),
+  new THREE.MeshBasicMaterial({ map: haloTex, color: '#bfffff', transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
+);
+portalCol.position.y = 28;
+const portalLight = new THREE.PointLight('#cfffff', 5, 44, 1.3);
+portalLight.position.y = 6;
+portal.add(portalRing, portalDisc, portalCol, portalLight);
+scene.add(portal);
+
+// overlay branco da travessia (clarão luminoso)
+const fadeEl = document.createElement('div');
+fadeEl.style.cssText = 'position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8;transition:opacity 1.1s ease;';
+app.appendChild(fadeEl);
+
+function applyBiomeTheme(theme) {
+  FOG_LIT.set(theme.fogLit); BG_LIT.set(theme.bgLit); SKY_LIT.set(theme.skyLit);
+  HEMIG_LIT.set(theme.hemiGround); SUN_LIT.set(theme.sunLit); GROUND_LIT.set(theme.groundLit);
+  forest.applyTheme(theme); hearts.applyTheme(theme); ambient.applyTheme(theme);
+}
+
+function spawnPortal() {
+  const a = Math.random() * Math.PI * 2;
+  portalX = Math.cos(a) * 38; portalZ = Math.sin(a) * 38;
+  portal.position.set(portalX, 0, portalZ);
+  portal.visible = true;
+  portalActive = true;
+  hud.flash('um limiar de luz se abre', 4000);
+}
+
+function regenerate() {
+  biomeIndex = (biomeIndex + 1) % BIOMES.length;
+  const theme = BIOMES[biomeIndex];
+  applyBiomeTheme(theme);
+  forest.reseed();
+  hearts.reset();
+  creatures.clear();
+  ambient.reset();
+  flora.clear();
+  heartsLit = 0; light = 0; worldLight = 0; worldTarget = 0;
+  applyWorldLight(0);
+  hud.setProgress(0, hearts.count);
+  hud.setLight(0);
+  spark.position.set(0, 1, 0); spark.vx = 0; spark.vz = 0;
+  placeCamera(true);
+  music.setReacendido(false);
+  portal.visible = false; portalActive = false;
+  hud.flash(theme.name, 3500);
+}
+
+function crossBiome() {
+  if (transitioning) return;
+  transitioning = true;
+  portalActive = false;
+  fadeEl.style.opacity = '1';
+  setTimeout(regenerate, 1150); // no auge do branco, troca o mundo
+  setTimeout(() => { fadeEl.style.opacity = '0'; }, 1550);
+  setTimeout(() => { transitioning = false; }, 2800);
+}
+
+applyBiomeTheme(BIOMES[0]);
+
 // --- Câmera top-down seguindo a centelha ---
 function placeCamera(snap) {
   const t = spark.position;
@@ -171,6 +254,10 @@ window.__DEBUG__.teleport = (x, z) => { spark.position.x = x; spark.position.z =
 window.__DEBUG__.flora = () => ({ ready: flora.ready, rocks: Object.fromEntries(Object.entries(flora.rocks).map(([k, v]) => [k, v.n])), flora: Object.fromEntries(Object.entries(flora.flora).map(([k, v]) => [k, v.n])) });
 // custo da cena (draw calls + triângulos) — indicador de carga GPU, independe da aba/throttle
 window.__DEBUG__.sceneInfo = () => { renderer.render(scene, camera); return { calls: renderer.info.render.calls, tris: renderer.info.render.triangles }; };
+window.__DEBUG__.spawnPortal = () => spawnPortal();
+window.__DEBUG__.cross = () => crossBiome();
+window.__DEBUG__.biome = () => ({ index: biomeIndex, name: BIOMES[biomeIndex].name, portalActive, transitioning });
+window.__DEBUG__.portalPos = () => ({ x: portalX, z: portalZ });
 
 // --- Loop ---
 const clock = new THREE.Clock();
@@ -211,7 +298,7 @@ function loop() {
   const ready = light >= BAL.game.motesToReacender && heartsLit < hearts.count;
   // ensino inicial: a dica fica até reunir as primeiras luzes (some sozinha quando entende)
   if (ready) hud.hint('leve a luz a um Coração ☾');
-  else if (started && heartsLit === 0 && light < 4 && runTime > 1.5) hud.hint(STORY.firstHint);
+  else if (started && biomeIndex === 0 && heartsLit === 0 && light < 4 && runTime > 1.5) hud.hint(STORY.firstHint);
   else hud.hint(null);
   hearts.update(dt, ready);
 
@@ -265,9 +352,22 @@ function loop() {
       hud.hint(null);
       hud.flash(STORY.climax, 4500);
       if (STORY.closing) setTimeout(() => hud.flash(STORY.closing, 5000), 5200);
+      setTimeout(spawnPortal, 11000); // depois do clímax assentar, abre o limiar pro próximo bioma
     } else {
       hud.flash(STORY.hearts[heartsLit - 1]);
     }
+  }
+
+  // limiar de luz: pulsa, e ao atravessar (centelha dentro) -> novo bioma
+  if (portalActive) {
+    const pul = 0.6 + (Math.sin(runTime * 3) * 0.5 + 0.5) * 0.4;
+    portalRing.material.opacity = pul;
+    portalDisc.material.opacity = 0.45 + pul * 0.3;
+    portalRing.rotation.y += dt * 0.6;
+    hud.hint('atravesse o limiar ✦');
+    const dx = spark.position.x - portalX;
+    const dz = spark.position.z - portalZ;
+    if (dx * dx + dz * dz < 36) crossBiome();
   }
 
   // transição global suave (mundo clareia conforme reacende)

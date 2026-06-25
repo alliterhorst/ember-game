@@ -161,6 +161,19 @@ export default class Flora {
     }
   }
 
+  /** Limpa a flora e re-espalha pedras num layout novo (novo bioma). */
+  clear() {
+    if (!this.ready) { this._pending.length = 0; return; }
+    for (const k of this._floraKeys) {
+      const m = this.flora[k]; m.n = 0; m.mesh.count = 0; m._growing.length = 0;
+    }
+    this._floraCursor = 0;
+    for (const k of Object.keys(this.rocks)) {
+      const m = this.rocks[k]; m.n = 0; m.mesh.count = 0; m._growing.length = 0;
+    }
+    this._scatterRocks(70);
+  }
+
   update(dt) {
     if (!this.ready) return;
     for (const k of this._floraKeys) this.flora[k].update(dt);

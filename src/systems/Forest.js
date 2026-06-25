@@ -42,24 +42,35 @@ export default class Forest {
     this._q = new THREE.Quaternion();
     this._s = new THREE.Vector3();
     this._c = new THREE.Color();
+    // cores REACESAS atuais (mudam por bioma)
+    this.leafLit = LEAF_LIT.clone();
+    this.trunkLit = TRUNK_LIT.clone();
 
-    for (let i = 0; i < count; i += 1) {
+    this._seed();
+    scene.add(this.trunks, this.copas);
+  }
+
+  /** (Re)gera a distribuição das árvores no estado ADORMECIDO. */
+  _seed() {
+    const F = BAL.forest;
+    for (let i = 0; i < this.count; i += 1) {
       const a = Math.random() * Math.PI * 2;
       // dois anéis: palco interno (espaçado) + muralha externa (adensa com o raio)
       let r;
-      if (i / count < F.innerFrac) {
+      if (i / this.count < F.innerFrac) {
         r = F.inner + Math.sqrt(Math.random()) * (F.mid - F.inner);
       } else {
-        // ^2 empurra árvores pra fora (muralha mais densa na borda)
         const t = Math.random() ** 0.65;
         r = F.mid + t * (F.outer - F.mid);
       }
       this.x[i] = Math.cos(a) * r;
       this.z[i] = Math.sin(a) * r;
-      this.baseS[i] = 0.6 + Math.random() * 1.1; // faixa mais larga: marcos altos + sub-bosque
+      this.baseS[i] = 0.6 + Math.random() * 1.1;
       this.sy[i] = 0.8 + Math.random() * 0.7;
       this.ry[i] = Math.random() * Math.PI * 2;
       this.copaR[i] = COPA_R[i % 3];
+      this.lit[i] = 0;
+      this.transit[i] = 0;
       this._writeMatrix(i);
       this.trunks.setColorAt(i, TRUNK_SLEEP);
       this.copas.setColorAt(i, LEAF_SLEEP);
@@ -68,8 +79,16 @@ export default class Forest {
     this.copas.instanceMatrix.needsUpdate = true;
     this.trunks.instanceColor.needsUpdate = true;
     this.copas.instanceColor.needsUpdate = true;
-    scene.add(this.trunks, this.copas);
   }
+
+  /** Define as cores REACESAS do bioma atual. */
+  applyTheme(theme) {
+    this.leafLit.set(theme.leafLit);
+    this.trunkLit.set(theme.trunkLit);
+  }
+
+  /** Regenera um bosque adormecido novo (novo bioma). */
+  reseed() { this._seed(); }
 
   _writeMatrix(i) {
     const grow = 0.62 + this.lit[i] * 0.45; // árvore apagada é menor; cresce ao reacender
@@ -120,8 +139,8 @@ export default class Forest {
       if (!this.transit[i]) continue;
       any = true;
       this.lit[i] = Math.min(this.lit[i] + dt * 0.7, 1);
-      this.copas.setColorAt(i, this._c.copy(LEAF_SLEEP).lerp(LEAF_LIT, this.lit[i]));
-      this.trunks.setColorAt(i, this._c.copy(TRUNK_SLEEP).lerp(TRUNK_LIT, this.lit[i]));
+      this.copas.setColorAt(i, this._c.copy(LEAF_SLEEP).lerp(this.leafLit, this.lit[i]));
+      this.trunks.setColorAt(i, this._c.copy(TRUNK_SLEEP).lerp(this.trunkLit, this.lit[i]));
       this._writeMatrix(i);
       if (this.lit[i] >= 1) this.transit[i] = 0;
     }

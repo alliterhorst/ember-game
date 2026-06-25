@@ -54,6 +54,19 @@ export default class Creatures {
     }
   }
 
+  /** Some com todas as criaturas (novo bioma). */
+  clear() {
+    this.active.fill(false);
+    this._p.set(0, -999, 0);
+    this._s.setScalar(0.001);
+    for (let i = 0; i < MAX; i += 1) {
+      this._m.compose(this._p, this._q, this._s);
+      this.mesh.setMatrixAt(i, this._m);
+    }
+    this.mesh.instanceMatrix.needsUpdate = true;
+    this.cursor = 0;
+  }
+
   update(dt) {
     this._t += dt;
     let any = false;
