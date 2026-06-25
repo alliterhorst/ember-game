@@ -55,6 +55,17 @@ export default class Spark {
     this.root.position.x += this.vx * dt;
     this.root.position.z += this.vz * dt;
 
+    // prende no mundo (não sai da área jogável)
+    const wr = BAL.game.worldRadius;
+    const r2 = this.root.position.x * this.root.position.x + this.root.position.z * this.root.position.z;
+    if (r2 > wr * wr) {
+      const d = Math.sqrt(r2);
+      this.root.position.x *= wr / d;
+      this.root.position.z *= wr / d;
+      this.vx *= 0.3;
+      this.vz *= 0.3;
+    }
+
     // pulsar leve (vida)
     this._t += dt;
     this.core.scale.setScalar(1 + Math.sin(this._t * 4) * 0.06);

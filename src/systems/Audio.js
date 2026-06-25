@@ -22,7 +22,8 @@ export default class Audio {
     this.master.gain.value = 0.5;
     this.master.connect(this.ctx.destination);
     this._started = true;
-    this._pad();
+    // pad ambiente DESLIGADO (estava soando como chiado). Trilha de verdade entra via composer.
+    // this._pad();
   }
 
   toggleMute() {

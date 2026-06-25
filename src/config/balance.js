@@ -23,5 +23,6 @@ export const BAL = {
     absorbRadius: 1.6, // alcance de absorção (cresce com a centelha)
     growPerMote: 0.035, // quanto a centelha cresce por mota absorvida
     motesToReacender: 16, // motas pra encher a barra de luz
+    worldRadius: 74, // limite jogável (a centelha não sai do mundo)
   },
 };
