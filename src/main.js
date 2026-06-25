@@ -18,6 +18,8 @@ import Ambient from './systems/Ambient.js';
 import Audio from './systems/Audio.js';
 import Music from './systems/Music.js';
 import Hud from './ui/Hud.js';
+import StartScreen from './ui/StartScreen.js';
+import { STORY } from './data/story.js';
 
 const app = document.getElementById('app');
 
@@ -87,10 +89,13 @@ const motes = new Motes(scene);
 const hud = new Hud(app);
 const audio = new Audio();
 const music = new Music();
+const startScreen = new StartScreen(app);
 
 hud.setProgress(0, hearts.count);
 
 // --- estado do jogo ---
+const ZERO_DIR = { x: 0, z: 0 };
+let started = false; // só joga depois de "acender" na tela inicial
 let light = 0; // carga de luz (a barra)
 let heartsLit = 0;
 let worldLight = 0; // luz global atual (0..1)
@@ -156,13 +161,22 @@ const clock = new THREE.Clock();
 let lastDt = 0.016;
 let fpsAccum = 0;
 let fpsFrames = 0;
+let runTime = 0; // tempo desde "acender" (pro ensino inicial)
 placeCamera(true);
+
+// acender (tela inicial) -> começa o jogo
+startScreen.onStart(() => {
+  started = true;
+  if (music.start) music.start();
+});
 
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   lastDt = dt;
+  if (started) runTime += dt;
 
-  spark.update(dt, input.dir(), particles);
+  // antes de "acender", a centelha fica parada (controle travado)
+  spark.update(dt, started ? input.dir() : ZERO_DIR, particles);
   motes.update(dt);
 
   // absorver motas -> crescer + carregar a barra (com teto)
@@ -179,7 +193,10 @@ function loop() {
   }
 
   const ready = light >= BAL.game.motesToReacender && heartsLit < hearts.count;
-  hud.hint(ready ? 'leve a luz a um Coração ☾' : null);
+  // ensino inicial: a dica fica até reunir as primeiras luzes (some sozinha quando entende)
+  if (ready) hud.hint('leve a luz a um Coração ☾');
+  else if (started && heartsLit === 0 && light < 4 && runTime > 1.5) hud.hint(STORY.firstHint);
+  else hud.hint(null);
   hearts.update(dt, ready);
 
   // levar a luz a um Coração -> reacende a região
@@ -208,9 +225,10 @@ function loop() {
         creatures.spawn(p.x, p.z, 4);
       }
       hud.hint(null);
-      hud.flash('o bosque renasce', 4500);
+      hud.flash(STORY.climax, 4500);
+      if (STORY.closing) setTimeout(() => hud.flash(STORY.closing, 5000), 5200);
     } else {
-      hud.flash('um Coração desperta');
+      hud.flash(STORY.hearts[heartsLit - 1]);
     }
   }
 
