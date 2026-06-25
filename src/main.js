@@ -345,6 +345,44 @@ window.__DEBUG__.grow = (n) => { for (let k = 0; k < n; k += 1) spark.grow(BAL.g
 window.__DEBUG__.sparkSize = () => spark.size;
 window.__DEBUG__.testDash = () => { spark.vx = 10; spark.vz = 0; spark.dashReady = 0; const ok = spark.dash(1, 0); return { ok, vx: +spark.vx.toFixed(1), glow: +spark.dashGlow.toFixed(2) }; };
 
+// --- Pause + qualidade (acessibilidade mobile) ---
+let paused = false;
+let qualityMode = 'high';
+function applyQuality(q) {
+  qualityMode = q;
+  try { localStorage.setItem('ember_quality', q); } catch (e) { /* ignore */ }
+  if (q === 'low') { renderer.setPixelRatio(1); bloom.enabled = false; } else { renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); bloom.enabled = true; }
+  qLow.style.opacity = q === 'low' ? '1' : '0.4';
+  qHigh.style.opacity = q === 'high' ? '1' : '0.4';
+}
+
+const pauseBtn = document.createElement('button');
+pauseBtn.setAttribute('aria-label', 'pausar');
+pauseBtn.textContent = '⏸';
+pauseBtn.style.cssText = 'position:fixed;top:14px;right:66px;width:44px;height:44px;border:none;border-radius:50%;background:rgba(255,255,255,0.07);color:#fff;font-size:17px;cursor:pointer;z-index:9;display:flex;align-items:center;justify-content:center;';
+pauseBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+app.appendChild(pauseBtn);
+
+const pauseEl = document.createElement('div');
+pauseEl.style.cssText = 'position:fixed;inset:0;z-index:12;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:radial-gradient(ellipse at center,rgba(15,22,24,0.55),rgba(6,9,10,0.92));font-family:ui-monospace,"Segoe UI",monospace;color:#fff;text-align:center;padding:24px;';
+const btnCss = 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);color:#fff;font-family:inherit;font-size:15px;letter-spacing:0.12em;padding:12px 26px;border-radius:24px;cursor:pointer;min-width:200px;';
+pauseEl.innerHTML = `<div style="font-size:clamp(26px,7vw,42px);letter-spacing:0.3em;margin-bottom:8px;text-shadow:0 0 22px ${PALETTE.sparkGlow}">EMBER</div>`
+  + `<button id="pz-resume" style="${btnCss}">continuar</button>`
+  + `<button id="pz-restart" style="${btnCss}">recomeçar a jornada</button>`
+  + `<div style="display:flex;gap:10px;align-items:center;font-size:12px;letter-spacing:0.2em;color:rgba(255,255,255,0.6);margin-top:6px">qualidade<button id="pz-low" style="${btnCss}min-width:0;padding:8px 16px">baixa</button><button id="pz-high" style="${btnCss}min-width:0;padding:8px 16px">alta</button></div>`
+  + '<div style="font-size:11px;letter-spacing:0.2em;color:rgba(255,255,255,0.35);margin-top:4px">baixa = sem bloom, mais leve no celular</div>';
+app.appendChild(pauseEl);
+const qLow = pauseEl.querySelector('#pz-low');
+const qHigh = pauseEl.querySelector('#pz-high');
+[pauseEl, pauseBtn].forEach((el) => el.addEventListener('pointerdown', (e) => e.stopPropagation()));
+function setPaused(p) { paused = p; pauseEl.style.display = p ? 'flex' : 'none'; pauseBtn.textContent = p ? '⏵' : '⏸'; if (!p) clock.getDelta(); }
+pauseBtn.addEventListener('click', () => setPaused(!paused));
+pauseEl.querySelector('#pz-resume').addEventListener('click', () => setPaused(false));
+pauseEl.querySelector('#pz-restart').addEventListener('click', () => { biomeIndex = BIOMES.length - 1; regenerate(); setPaused(false); });
+qLow.addEventListener('click', () => applyQuality('low'));
+qHigh.addEventListener('click', () => applyQuality('high'));
+try { applyQuality(localStorage.getItem('ember_quality') || 'high'); } catch (e) { applyQuality('high'); }
+
 // --- Loop ---
 const clock = new THREE.Clock();
 let lastDt = 0.016;
@@ -379,6 +417,7 @@ window.addEventListener('pointerup', () => {
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   lastDt = dt;
+  if (paused) { composer.render(); return; } // congela o jogo, mantém a cena na tela
   if (started) runTime += dt;
 
   // antes de "acender", a centelha fica parada (controle travado)
