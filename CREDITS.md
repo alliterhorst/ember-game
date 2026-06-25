@@ -1,0 +1,25 @@
+# Créditos — EMBER
+
+## Trilha sonora (gravações em domínio público)
+
+Todas as gravações abaixo têm licença **livre verificada no nível da GRAVAÇÃO** (não só da
+composição). Compositores estão em domínio público; as gravações específicas foram dedicadas
+ao domínio público / CC0.
+
+- **Erik Satie — Gymnopédie nº 1** (leito de exploração)
+  Gravação em **domínio público** (Robin Alciatore, via Musopen) — Wikimedia Commons.
+  https://commons.wikimedia.org/wiki/File:Erik_Satie_-_gymnopedies_-_la_1_ere._lent_et_douloureux.ogg
+  Arquivo: `public/assets/audio/satie-gymnopedie.ogg`
+
+- **Edvard Grieg — "Morning Mood" (Peer Gynt, Suíte nº 1)** (clímax / o bosque renasce)
+  Gravação da **Czech National Symphony Orchestra** ("Musopen Symphony"), **domínio público**
+  (Projeto Kickstarter Musopen) — Wikimedia Commons.
+  https://commons.wikimedia.org/wiki/File:Musopen_-_Morning.ogg
+  Arquivo: `public/assets/audio/grieg-morning.ogg`
+
+> Cortesia ao Musopen (musopen.org) por financiar e liberar estas gravações ao domínio público.
+
+## Bibliotecas
+
+- [Howler.js](https://howlerjs.com/) — áudio web (MIT).
+- [three.js](https://threejs.org/) — render 3D (MIT).

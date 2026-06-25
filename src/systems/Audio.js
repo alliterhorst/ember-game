@@ -1,6 +1,8 @@
-// src/systems/Audio.js — áudio generativo via Web Audio. Dono: composer/sound-designer.
-// Pad ambiente contemplativo + ping de absorver + swell do reacender. Sem assets.
-// Requer um gesto do usuário pra iniciar (autoplay policy) — destrava no 1º pointer.
+// src/systems/Audio.js — SFX via Web Audio. Dono: sound-designer.
+// SFX em CAMADAS com reverb (convolution) e sub-bass — não mais "pings" secos.
+// absorver = chime cristalino + intake (sobe de tom em sequência); reacender = evento
+// cinematográfico (whoosh de antecipação + impacto sub-bass + sino com cauda longa + shimmer).
+// A ambiência fica por conta da TRILHA (Music). Requer um gesto pra iniciar (autoplay policy).
 export default class Audio {
   constructor() {
     this.ctx = null;
@@ -19,11 +21,17 @@ export default class Audio {
     if (!AC) return;
     this.ctx = new AC();
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.5;
+    this.master.gain.value = this.muted ? 0 : 0.5;
     this.master.connect(this.ctx.destination);
+    // reverb compartilhado (dá "espaço" — tira o som seco de demo)
+    this.reverb = this._makeReverb(2.8, 2.4);
+    const rg = this.ctx.createGain();
+    rg.gain.value = 0.85;
+    this.reverb.connect(rg).connect(this.master);
+    this._verb = this.reverb;
+    this._absorbStreak = 0;
+    this._lastAbsorb = -10;
     this._started = true;
-    // pad ambiente DESLIGADO (estava soando como chiado). Trilha de verdade entra via composer.
-    // this._pad();
   }
 
   toggleMute() {
@@ -31,74 +39,140 @@ export default class Audio {
     if (this.master) this.master.gain.value = this.muted ? 0 : 0.5;
   }
 
-  /** Pad/drone ambiente — acorde suave com leve movimento (contemplativo). */
-  _pad() {
+  /** impulse response procedural (ruído com decaimento) p/ convolution reverb. */
+  _makeReverb(seconds, decay) {
     const ctx = this.ctx;
-    const freqs = [110, 164.81, 220, 277.18]; // A2, E3, A3, C#4 (suave)
-    const pad = ctx.createGain();
-    pad.gain.value = 0.12;
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 700;
-    pad.connect(filter).connect(this.master);
-    for (const f of freqs) {
-      const o = ctx.createOscillator();
-      o.type = 'sine';
-      o.frequency.value = f;
-      // leve LFO de detune pra dar vida
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.07 + Math.random() * 0.1;
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 2.5;
-      lfo.connect(lfoGain).connect(o.detune);
-      o.connect(pad);
-      o.start();
-      lfo.start();
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch += 1) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i += 1) d[i] = (Math.random() * 2 - 1) * ((1 - i / len) ** decay);
     }
-    this._padFilter = filter;
+    const conv = ctx.createConvolver();
+    conv.buffer = buf;
+    return conv;
   }
 
-  /** Ping curto e cristalino ao absorver uma mota. */
+  _noise(dur) {
+    const ctx = this.ctx;
+    const len = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i += 1) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    return src;
+  }
+
+  /** Absorver uma mota: chime cristalino + intake; sobe de tom em coletas seguidas. */
   absorb() {
     if (!this._started || this.muted) return;
     const ctx = this.ctx;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'triangle';
     const t = ctx.currentTime;
-    o.frequency.setValueAtTime(700 + Math.random() * 300, t);
-    o.frequency.exponentialRampToValueAtTime(1400, t + 0.12);
-    g.gain.setValueAtTime(0.0, t);
-    g.gain.linearRampToValueAtTime(0.14, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-    o.connect(g).connect(this.master);
-    o.start(t);
-    o.stop(t + 0.2);
+    this._absorbStreak = (t - this._lastAbsorb > 1.1) ? 0 : Math.min(this._absorbStreak + 1, 12);
+    this._lastAbsorb = t;
+    const base = 660 * (2 ** (this._absorbStreak / 12)); // sobe ~1 semitom por coleta
+
+    // chime (duas parciais, levemente desafinadas = brilho)
+    [[1, 0.12], [2.01, 0.05]].forEach(([mult, amp]) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(base * mult, t);
+      o.frequency.exponentialRampToValueAtTime(base * mult * 1.5, t + 0.1);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(amp, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      o.connect(g);
+      g.connect(this.master);
+      g.connect(this._verb);
+      o.start(t);
+      o.stop(t + 0.25);
+    });
+
+    // intake: ruído filtrado "puxando pra dentro"
+    const n = this._noise(0.12);
+    const nf = ctx.createBiquadFilter();
+    nf.type = 'bandpass';
+    nf.frequency.value = base * 2;
+    nf.Q.value = 2;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0, t);
+    ng.gain.linearRampToValueAtTime(0.05, t + 0.04);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+    n.connect(nf).connect(ng);
+    ng.connect(this.master);
+    n.start(t);
+    n.stop(t + 0.13);
   }
 
-  /** Swell grande e luminoso no reacender (o pad "abre"). */
+  /** Reacender: whoosh de antecipação -> impacto sub-bass -> sino + shimmer com cauda longa. */
   reacender() {
     if (!this._started || this.muted) return;
     const ctx = this.ctx;
     const t = ctx.currentTime;
-    if (this._padFilter) {
-      this._padFilter.frequency.setValueAtTime(700, t);
-      this._padFilter.frequency.exponentialRampToValueAtTime(2600, t + 1.6); // o mundo "abre"
-    }
-    // acorde maior ascendente (luminoso)
-    const chord = [261.63, 329.63, 392.0, 523.25]; // C maior
-    chord.forEach((f, i) => {
+    const hit = t + 0.62; // o instante da luz
+
+    // (a) whoosh de antecipação (ruído subindo)
+    const w = this._noise(1.0);
+    const wf = ctx.createBiquadFilter();
+    wf.type = 'lowpass';
+    wf.frequency.setValueAtTime(300, t);
+    wf.frequency.exponentialRampToValueAtTime(5200, hit);
+    const wg = ctx.createGain();
+    wg.gain.setValueAtTime(0, t);
+    wg.gain.linearRampToValueAtTime(0.13, hit - 0.02);
+    wg.gain.exponentialRampToValueAtTime(0.001, hit + 0.3);
+    w.connect(wf).connect(wg);
+    wg.connect(this.master);
+    wg.connect(this._verb);
+    w.start(t);
+    w.stop(t + 1.0);
+
+    // (b) impacto com sub-bass (peso físico)
+    const sub = ctx.createOscillator();
+    const sg = ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(82, hit);
+    sub.frequency.exponentialRampToValueAtTime(40, hit + 0.5);
+    sg.gain.setValueAtTime(0, hit);
+    sg.gain.linearRampToValueAtTime(0.55, hit + 0.02);
+    sg.gain.exponentialRampToValueAtTime(0.001, hit + 0.7);
+    sub.connect(sg).connect(this.master);
+    sub.start(hit);
+    sub.stop(hit + 0.8);
+
+    // (c) sino/cluster luminoso (acorde maior) com cauda longa de reverb
+    [392.0, 523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.type = 'sine';
       o.frequency.value = f;
-      const st = t + i * 0.08;
+      const st = hit + i * 0.05;
       g.gain.setValueAtTime(0, st);
-      g.gain.linearRampToValueAtTime(0.1, st + 0.25);
-      g.gain.exponentialRampToValueAtTime(0.001, st + 2.2);
-      o.connect(g).connect(this.master);
+      g.gain.linearRampToValueAtTime(0.09, st + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, st + 3.0);
+      o.connect(g);
+      g.connect(this.master);
+      g.connect(this._verb);
       o.start(st);
-      o.stop(st + 2.4);
+      o.stop(st + 3.2);
     });
+
+    // (d) shimmer ascendente (sparkle)
+    for (let i = 0; i < 6; i += 1) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      const st = hit + i * 0.08;
+      o.frequency.value = 880 * (2 ** (i / 6));
+      g.gain.setValueAtTime(0, st);
+      g.gain.linearRampToValueAtTime(0.04, st + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, st + 0.5);
+      o.connect(g);
+      g.connect(this._verb);
+      o.start(st);
+      o.stop(st + 0.55);
+    }
   }
 }
