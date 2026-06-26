@@ -11,7 +11,7 @@ floresce e ganha vida. Reacender tudo abre um **limiar de luz** que leva ao pró
 > **Não é um "joguinho relaxante" passivo** — é sobre **transformação e ação**: você *age*, e o mundo
 > responde. O ritmo é calmo; o que você faz, não.
 
-🎮 Jogue: *(em breve — protótipo jogável)* · Controle de **uma mão** (mouse = toque).
+🎮 **Jogue:** https://alliterhorst.github.io/ember-game/ · Controle de **uma mão** (mouse = toque).
 
 ---
 
