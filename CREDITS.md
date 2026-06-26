@@ -78,8 +78,6 @@ Tudo open source, tudo MIT — a base sobre a qual o EMBER roda.
 - **Assets:** seguem as licenças listadas acima (a MIT do código **não** os cobre). Em especial, a
   gravação da **Gnossienne nº 1** é **CC BY-SA 3.0** — se você reusar esse arquivo, mantenha a
   atribuição a La Pianista e a mesma licença.
-- **Documentos de design** (`GAME_GUIDE.md`, `ART_IDENTITY.md`, `PLAN.md`): abertos de propósito,
-  pra quem quiser ver como o jogo foi pensado.
 
 > Se você usar EMBER (código, design ou ideias) em algo seu, adoraríamos saber. Sem obrigação —
 > só o gosto de ver a corrente do open source seguir.

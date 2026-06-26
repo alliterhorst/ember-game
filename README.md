@@ -37,11 +37,6 @@ EMBER foi construído por um **estúdio de agentes de IA** (o Murmur Studio) orq
 o trabalho humano que decide a qualidade é o gosto, o julgamento, a verificação e o saber pedir ajuda.
 É um experimento transparente — os jogos são o caso, não a vitrine.
 
-Documentos de design (abertos de propósito):
-- [`GAME_GUIDE.md`](GAME_GUIDE.md) — o documento mestre (decisões, pilares, mecânicas).
-- [`ART_IDENTITY.md`](ART_IDENTITY.md) — a direção de arte.
-- [`PLAN.md`](PLAN.md) — o plano de produção faseado.
-
 ## Open source — da comunidade, para a comunidade
 
 EMBER **só existe** porque a comunidade open source existe. Ele roda sobre **three.js**, **Howler.js**
@@ -52,8 +47,6 @@ e **Vite** (todos MIT), com modelos 3D **CC0** do **[Kenney](https://kenney.nl/)
 Então a gente devolve na mesma moeda:
 
 - **Código sob [MIT](LICENSE)** — use, estude, faça fork, construa em cima.
-- **Documentos de design abertos** (`GAME_GUIDE.md`, `ART_IDENTITY.md`, `PLAN.md`) — não só o "o quê",
-  mas o **porquê** de cada decisão.
 - **Créditos honestos e rastreáveis** em [`CREDITS.md`](CREDITS.md): cada asset com autoria, origem e
   licença verificada **no nível da obra**.
 
