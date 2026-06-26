@@ -42,6 +42,24 @@ Documentos de design (abertos de propósito):
 - [`ART_IDENTITY.md`](ART_IDENTITY.md) — a direção de arte.
 - [`PLAN.md`](PLAN.md) — o plano de produção faseado.
 
+## Open source — da comunidade, para a comunidade
+
+EMBER **só existe** porque a comunidade open source existe. Ele roda sobre **three.js**, **Howler.js**
+e **Vite** (todos MIT), com modelos 3D **CC0** do **[Kenney](https://kenney.nl/)** e uma trilha de
+**domínio público** liberada pelo **[Musopen](https://musopen.org/)**. Nada disso foi pago; tudo foi
+**doado ao comum** por quem veio antes.
+
+Então a gente devolve na mesma moeda:
+
+- **Código sob [MIT](LICENSE)** — use, estude, faça fork, construa em cima.
+- **Documentos de design abertos** (`GAME_GUIDE.md`, `ART_IDENTITY.md`, `PLAN.md`) — não só o "o quê",
+  mas o **porquê** de cada decisão.
+- **Créditos honestos e rastreáveis** em [`CREDITS.md`](CREDITS.md): cada asset com autoria, origem e
+  licença verificada **no nível da obra**.
+
+Se isso te ajudar a aprender ou a fazer o seu jogo, já valeu. Fork, issue e PR são bem-vindos — e se
+usar algo daqui, conta pra gente. **A corrente do open source só segue se a gente devolver.** 💛
+
 ## Créditos e licenças
 
 Toda a trilha e os modelos 3D são de **domínio público / CC0 / CC BY-SA**, com a licença verificada
