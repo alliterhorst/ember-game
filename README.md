@@ -32,8 +32,8 @@ npm run build    # build de produção (deploy estático)
 
 ## Como foi feito
 
-EMBER foi construído por um **estúdio de agentes de IA** (o [Murmur Studio](https://github.com/alliterhorst/murmur-studio))
-orquestrados, com **direção e curadoria humana no comando a cada passo**. A IA acelera o "como fazer";
+EMBER foi construído por um **estúdio de agentes de IA** (o Murmur Studio) orquestrados, com
+**direção e curadoria humana no comando a cada passo**. A IA acelera o "como fazer";
 o trabalho humano que decide a qualidade é o gosto, o julgamento, a verificação e o saber pedir ajuda.
 É um experimento transparente — os jogos são o caso, não a vitrine.
 
@@ -44,8 +44,11 @@ Documentos de design (abertos de propósito):
 
 ## Créditos e licenças
 
-Toda a trilha e os modelos 3D são de **domínio público / CC0 / CC-BY**, com a licença verificada
+Toda a trilha e os modelos 3D são de **domínio público / CC0 / CC BY-SA**, com a licença verificada
 **no nível da gravação/modelo** e creditada em [`CREDITS.md`](CREDITS.md) (Satie, Grieg / Czech
 National Symphony via Musopen·Wikimedia; Kenney Nature Kit; Three.js; Howler.js).
+
+O **código** é distribuído sob a licença **MIT** (ver [`LICENSE`](LICENSE)). Os **assets** (trilha e
+modelos 3D) **não** são cobertos pela MIT — cada um segue a própria licença, listada em [`CREDITS.md`](CREDITS.md).
 
 > **Status:** protótipo jogável (vertical slice avançado). Não é um produto à venda.
