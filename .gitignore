@@ -4,4 +4,4 @@ dist/
 *.log
 
 # vídeos de divulgação (binários grandes — ficam fora do git)
-divulgacao/*.mp4
+divulgacao/
